@@ -1,5 +1,9 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+from pathlib import Path
+
+# Get the backend directory path
+BACKEND_DIR = Path(__file__).parent.parent
 
 class Settings(BaseSettings):
     groq_api_key: str
@@ -11,7 +15,7 @@ class Settings(BaseSettings):
     debug: bool = True
     
     class Config:
-        env_file = ".env"
+        env_file = str(BACKEND_DIR / ".env")
         case_sensitive = False
 
 settings = Settings()
