@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from core.database import get_db
-from models import Module, Manual, Cluster
-from schemas import ModuleResponse, GenerateModuleRequest, FeedbackCreate, FeedbackResponse
+from models.database_models import Module, Manual, Cluster
+from schemas.api_schemas import ModuleResponse, GenerateModuleRequest, FeedbackCreate, FeedbackResponse
 from services.rag_engine import RAGEngine
 from services.ai_engine import AIAdaptationEngine
 import logging
@@ -179,7 +179,7 @@ async def submit_feedback(
             detail=f"Module with ID {module_id} not found"
         )
     
-    from models import Feedback
+    from models.database_models import Feedback
     db_feedback = Feedback(**feedback.model_dump())
     db.add(db_feedback)
     db.commit()

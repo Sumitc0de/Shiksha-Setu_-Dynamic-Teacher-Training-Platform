@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from core.database import get_db
-from models import Cluster
-from schemas import ClusterCreate, ClusterUpdate, ClusterResponse
+from models.database_models import Cluster
+from schemas.api_schemas import ClusterCreate, ClusterUpdate, ClusterResponse
 
 router = APIRouter(prefix="/api/clusters", tags=["Clusters"])
 

@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List
 import os
 from core.database import get_db
-from models import Manual
-from schemas import ManualCreate, ManualResponse
+from models.database_models import Manual
+from schemas.api_schemas import ManualCreate, ManualResponse
 from services.pdf_processor import PDFProcessor
 from services.rag_engine import RAGEngine
 
