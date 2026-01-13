@@ -66,6 +66,13 @@ A **Dynamic Pedagogical Engine** that uses GenAI (RAG) to ingest standard state 
 6. **WhatsApp/PDF Export:**  
    * *User Story:* As an Admin, I want to one-click share the generated module to a specific Cluster's phone group.
 
+7. **On-the-spot Video Suggestions (No Storage):**
+   * *Simple Idea:* The platform can suggest short, publicly available videos from the web (for example, YouTube clips) that match the generated module. These suggestions appear inside the web app for previewing or sharing, but we do NOT download or store video files or copies in our database.
+   * *Why this helps:* Videos give teachers quick, practical examples and demonstrations they can watch or forward. By only linking/embedding public videos and showing clear credit (title + source), we avoid copyright problems and keep the system lightweight.
+   * *User Story:* As an Admin, I want automatic suggestions of useful, public videos related to a module so I can quickly preview or share them with teachers without the platform keeping copies.
+   * *Implementation notes:* Use public search/embed APIs (YouTube or other providers) to find and display video links or embeds; always show the original source and attribution. Do not persist video files; optionally log the shared link for audit/session purposes only.
+
+
 ### **Could-Have (Bonus)**
 
 7. **Feedback Loop Visualization:**  
