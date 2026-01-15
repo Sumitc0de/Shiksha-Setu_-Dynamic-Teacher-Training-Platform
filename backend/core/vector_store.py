@@ -1,122 +1,118 @@
 """
-Simple Vector Store using sentence-transformers and pickle
-Alternative to ChromaDB for Python 3.14 compatibility
+ChromaDB Vector Store for RAG with proper text handling
+Compatible with Python 3.13+ and fixes binary/hex output issues
 """
 
-import pickle
+import chromadb
+from chromadb.config import Settings
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-import numpy as np
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+import logging
 
-class SimpleVectorStore:
+logger = logging.getLogger(__name__)
+
+class ChromaVectorStore:
     """
-    A simple vector store for document embeddings and semantic search
-    Uses sentence-transformers for embeddings and cosine similarity for search
+    ChromaDB vector store for document embeddings and semantic search
+    Fixes binary/hex output issues by ensuring proper text encoding
     """
     
-    def __init__(self, persist_directory: str = "./vector_store", model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, persist_directory: str = "./chroma_db"):
         """
-        Initialize the vector store
+        Initialize ChromaDB vector store
         
         Args:
-            persist_directory: Directory to persist the vector store
-            model_name: Sentence transformer model name
+            persist_directory: Directory to persist ChromaDB data
         """
         self.persist_directory = Path(persist_directory)
         self.persist_directory.mkdir(parents=True, exist_ok=True)
         
-        # Load embedding model
-        print(f"Loading embedding model: {model_name}")
-        self.model = SentenceTransformer(model_name)
+        # Initialize ChromaDB client with persistence
+        logger.info(f"Initializing ChromaDB at: {self.persist_directory}")
+        self.client = chromadb.PersistentClient(
+            path=str(self.persist_directory),
+            settings=Settings(
+                anonymized_telemetry=False,
+                allow_reset=True
+            )
+        )
         
-        # Storage for documents and embeddings
-        self.documents: List[Dict[str, Any]] = []
-        self.embeddings: Optional[np.ndarray] = None
+        # Get or create collection with default embedding function
+        self.collection = self.client.get_or_create_collection(
+            name="shiksha_setu_documents",
+            metadata={"hnsw:space": "cosine"}  # Use cosine similarity
+        )
         
-        # Load existing data if available
-        self._load()
+        logger.info(f"ChromaDB initialized with {self.collection.count()} documents")
     
     def add_documents(self, texts: List[str], metadatas: List[Dict[str, Any]], ids: List[str]):
         """
-        Add documents to the vector store
+        Add documents to ChromaDB with proper text encoding
         
         Args:
             texts: List of document texts
             metadatas: List of metadata dictionaries
             ids: List of document IDs
         """
-        print(f"Adding {len(texts)} documents to vector store...")
+        logger.info(f"Adding {len(texts)} documents to ChromaDB...")
         
-        # Generate embeddings
-        new_embeddings = self.model.encode(texts, show_progress_bar=True)
+        # Clean and ensure proper text encoding (fixes binary/hex issues)
+        cleaned_texts = []
+        for text in texts:
+            if isinstance(text, bytes):
+                # Decode bytes to string
+                cleaned_text = text.decode('utf-8', errors='replace')
+            elif isinstance(text, str):
+                # Ensure clean UTF-8 string
+                cleaned_text = text.encode('utf-8', errors='replace').decode('utf-8')
+            else:
+                # Convert other types to string
+                cleaned_text = str(text)
+            cleaned_texts.append(cleaned_text)
         
-        # Add to storage
-        for text, metadata, doc_id, embedding in zip(texts, metadatas, ids, new_embeddings):
-            self.documents.append({
-                'id': doc_id,
-                'text': text,
-                'metadata': metadata
-            })
+        # Add to ChromaDB collection (ChromaDB handles embeddings automatically)
+        self.collection.add(
+            documents=cleaned_texts,
+            metadatas=metadatas,
+            ids=ids
+        )
         
-        # Update embeddings matrix
-        if self.embeddings is None:
-            self.embeddings = new_embeddings
-        else:
-            self.embeddings = np.vstack([self.embeddings, new_embeddings])
-        
-        # Persist
-        self._save()
-        print(f"✓ Added {len(texts)} documents (total: {len(self.documents)})")
+        logger.info(f"✓ Added {len(texts)} documents (total: {self.collection.count()})")
     
     def search(self, query: str, n_results: int = 5, filter_metadata: Optional[Dict[str, Any]] = None) -> Dict[str, List]:
         """
-        Search for similar documents
+        Search for similar documents using ChromaDB
         
         Args:
-            query: Search query
+            query: Search query (string)
             n_results: Number of results to return
             filter_metadata: Optional metadata filter
         
         Returns:
             Dictionary with documents, metadatas, and distances
         """
-        if len(self.documents) == 0:
-            return {'documents': [], 'metadatas': [], 'distances': []}
+        if self.collection.count() == 0:
+            return {'documents': [[]], 'metadatas': [[]], 'distances': [[]]}
         
-        # Generate query embedding
-        query_embedding = self.model.encode([query])[0]
+        # Ensure query is clean string
+        if isinstance(query, bytes):
+            query = query.decode('utf-8', errors='replace')
+        elif not isinstance(query, str):
+            query = str(query)
         
-        # Calculate similarities
-        similarities = cosine_similarity([query_embedding], self.embeddings)[0]
+        # Query ChromaDB
+        results = self.collection.query(
+            query_texts=[query],
+            n_results=n_results,
+            where=filter_metadata  # ChromaDB where filter
+        )
         
-        # Apply metadata filter if provided
-        valid_indices = []
-        for idx, doc in enumerate(self.documents):
-            if filter_metadata:
-                match = all(doc['metadata'].get(k) == v for k, v in filter_metadata.items())
-                if match:
-                    valid_indices.append(idx)
-            else:
-                valid_indices.append(idx)
-        
-        if not valid_indices:
-            return {'documents': [], 'metadatas': [], 'distances': []}
-        
-        # Get top results from valid indices
-        valid_similarities = [(idx, similarities[idx]) for idx in valid_indices]
-        valid_similarities.sort(key=lambda x: x[1], reverse=True)
-        top_results = valid_similarities[:n_results]
-        
-        # Prepare results
-        results = {
-            'documents': [[self.documents[idx]['text'] for idx, _ in top_results]],
-            'metadatas': [[self.documents[idx]['metadata'] for idx, _ in top_results]],
-            'distances': [[1 - sim for _, sim in top_results]]  # Convert similarity to distance
+        # Return in consistent format
+        return {
+            'documents': results['documents'],
+            'metadatas': results['metadatas'],
+            'distances': results['distances']
         }
-        
-        return results
     
     def delete_collection(self, manual_id: str):
         """
@@ -125,45 +121,42 @@ class SimpleVectorStore:
         Args:
             manual_id: The manual ID to delete
         """
-        # Find indices to keep
-        keep_indices = [i for i, doc in enumerate(self.documents) 
-                       if doc['metadata'].get('manual_id') != manual_id]
-        
-        if len(keep_indices) == len(self.documents):
-            return  # Nothing to delete
-        
-        # Filter documents and embeddings
-        self.documents = [self.documents[i] for i in keep_indices]
-        self.embeddings = self.embeddings[keep_indices] if self.embeddings is not None else None
-        
-        # Persist
-        self._save()
-        print(f"✓ Deleted documents for manual {manual_id}")
+        try:
+            # Get all documents with this manual_id
+            results = self.collection.get(
+                where={"manual_id": manual_id}
+            )
+            
+            if results['ids']:
+                # Delete by IDs
+                self.collection.delete(ids=results['ids'])
+                logger.info(f"✓ Deleted {len(results['ids'])} documents for manual {manual_id}")
+            else:
+                logger.info(f"No documents found for manual {manual_id}")
+        except Exception as e:
+            logger.error(f"Error deleting collection: {e}")
     
     def get_collection_size(self) -> int:
-        """Get the number of documents in the store"""
-        return len(self.documents)
+        """Get the number of documents in ChromaDB"""
+        return self.collection.count()
     
-    def _save(self):
-        """Save the vector store to disk"""
-        data = {
-            'documents': self.documents,
-            'embeddings': self.embeddings
-        }
-        with open(self.persist_directory / 'vectorstore.pkl', 'wb') as f:
-            pickle.dump(data, f)
-    
-    def _load(self):
-        """Load the vector store from disk"""
-        store_file = self.persist_directory / 'vectorstore.pkl'
-        if store_file.exists():
-            try:
-                with open(store_file, 'rb') as f:
-                    data = pickle.load(f)
-                self.documents = data.get('documents', [])
-                self.embeddings = data.get('embeddings', None)
-                print(f"✓ Loaded {len(self.documents)} documents from disk")
-            except Exception as e:
-                print(f"Warning: Could not load vector store: {e}")
-                self.documents = []
-                self.embeddings = None
+    def get_all_documents(self, limit: int = 100) -> Dict[str, List]:
+        """
+        Get all documents from the collection
+        
+        Args:
+            limit: Maximum number of documents to return
+        
+        Returns:
+            Dictionary with documents, metadatas, and ids
+        """
+        try:
+            results = self.collection.get(limit=limit)
+            return {
+                'documents': results['documents'],
+                'metadatas': results['metadatas'],
+                'ids': results['ids']
+            }
+        except Exception as e:
+            logger.error(f"Error getting documents: {e}")
+            return {'documents': [], 'metadatas': [], 'ids': []}

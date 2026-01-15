@@ -5,7 +5,7 @@
 **Phase:** Phase 2 - Frontend Development  
 **Status:** Ready for Development  
 **Date:** January 13, 2026  
-**Last Updated:** January 13, 2026
+**Last Updated:** January 15, 2026
 
 ---
 
@@ -55,13 +55,13 @@ http://localhost:8000/api
 **Cluster Schema:**
 ```javascript
 {
-  name: string,                    // Required
-  geographic_type: string,         // "Urban" / "Rural" / "Tribal"
-  primary_language: string,        // Any of 12 supported languages
-  infrastructure_level: string,    // "High" / "Medium" / "Low"
-  specific_challenges: string,     // Textarea
-  total_teachers: integer,         // Number of teachers
-  additional_notes: string         // Optional notes
+  name: string,                    // Required, max 100 chars
+  geographic_type: string,         // Required: "Urban" / "Rural" / "Tribal"
+  primary_language: string,        // Required: Any of 12 supported languages
+  infrastructure_level: string,    // Required: "High" / "Medium" / "Low"
+  specific_challenges: string,     // Optional: max 500 chars, textarea
+  total_teachers: integer,         // Required: 1-10000
+  additional_notes: string         // Optional: max 500 chars, textarea
 }
 ```
 
@@ -79,9 +79,24 @@ http://localhost:8000/api
 FormData {
   file: File,              // PDF file (required)
   title: string,           // Manual title (required)
+  language: string,        // Content language (required, from supported languages)
   description: string,     // Description (optional)
-  cluster_id: integer,     // Associated cluster (optional)
-  language: string         // Content language (required)
+  cluster_id: integer,     // Associated cluster ID (optional)
+}
+```
+
+**Manual Response Schema:**
+```javascript
+{
+  id: integer,
+  title: string,
+  description: string,
+  filename: string,
+  language: string,
+  cluster_id: integer,
+  total_pages: integer,
+  upload_date: datetime,
+  indexed: boolean
 }
 ```
 
@@ -89,19 +104,19 @@ FormData {
 | Method | Endpoint | Purpose | Request Body |
 |--------|----------|---------|--------------|
 | POST | `/generate` | Generate AI-adapted module | ModuleGenerate schema |
-| GET | `/` | List all modules | Query: `?cluster_id=X` |
+| GET | `/` | List all modules | Query: `?cluster_id=X&manual_id=Y` |
 | GET | `/{id}` | Get module details | - |
 | DELETE | `/{id}` | Delete module | - |
-| POST | `/{id}/feedback` | Submit teacher feedback | `{rating, comment}` |
+| POST | `/{id}/feedback` | Submit teacher feedback | `{rating: 1-5, comment: string}` |
 
 **Module Generation Schema:**
 ```javascript
 {
-  manual_id: integer,           // Source manual (required)
-  cluster_id: integer,          // Target cluster (required)
-  original_content: string,     // Text to adapt (required)
-  target_language: string,      // Translation target (optional)
-  section_title: string         // Section name (optional)
+  manual_id: integer,           // Source manual ID (required)
+  cluster_id: integer,          // Target cluster ID (required)
+  original_content: string,     // Text to adapt (required, 50-5000 chars)
+  target_language: string,      // Translation target (optional, defaults to cluster's primary_language)
+  section_title: string         // Section name (optional, max 200 chars)
 }
 ```
 
@@ -115,9 +130,18 @@ FormData {
   manual_id: integer,
   cluster_id: integer,
   target_language: string,
-  metadata: object,
+  section_title: string,
+  metadata: string,             // JSON string with additional info
   created_at: datetime,
   updated_at: datetime
+}
+```
+
+**Feedback Schema:**
+```javascript
+{
+  rating: integer,              // Required: 1-5 scale
+  comment: string               // Optional: feedback text
 }
 ```
 
@@ -521,9 +545,9 @@ frontend/
 const formData = new FormData();
 formData.append('file', fileObject);
 formData.append('title', titleValue);
-formData.append('description', descriptionValue);
-formData.append('language', languageValue);
-formData.append('cluster_id', clusterIdValue); // Optional
+formData.append('language', languageValue);        // Required
+formData.append('description', descriptionValue);  // Optional
+formData.append('cluster_id', clusterIdValue);     // Optional
 ```
 
 ---
@@ -616,9 +640,9 @@ formData.append('cluster_id', clusterIdValue); // Optional
 {
   manual_id: selectedManual.id,
   cluster_id: selectedCluster.id,
-  original_content: originalText,
-  target_language: selectedLanguage,
-  section_title: sectionTitle || "Generated Module"
+  original_content: originalText,           // 50-5000 chars
+  target_language: selectedLanguage,        // Optional
+  section_title: sectionTitle || "Module"   // Optional
 }
 ```
 
@@ -1426,10 +1450,14 @@ The frontend Phase 2 will be considered complete when:
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** January 13, 2026  
+**Document Version:** 1.1  
+**Last Updated:** January 15, 2026  
 **Prepared By:** Shiksha-Setu Development Team  
-**Status:** Ready for Frontend Development  
+**Status:** Backend API Updated - Ready for Frontend Development  
+
+**Changelog:**
+- **v1.1 (Jan 15, 2026):** Updated all API schemas to match actual backend implementation, added database migration script, corrected field names
+- **v1.0 (Jan 13, 2026):** Initial frontend requirements document
 
 ---
 
@@ -1489,10 +1517,8 @@ npm run dev
   "manual_id": 1,
   "cluster_id": 1,
   "target_language": "marathi",
-  "metadata": {
-    "cluster_name": "Tribal Belt Schools",
-    "manual_title": "Science Teaching Manual"
-  },
+  "section_title": "Teaching Science Without Lab",
+  "metadata": "{\"cluster_name\": \"Tribal Belt Schools\", \"manual_title\": \"Science Teaching Manual\", \"generated_at\": \"2026-01-13T11:30:00\"}",
   "created_at": "2026-01-13T11:30:00",
   "updated_at": "2026-01-13T11:30:00"
 }

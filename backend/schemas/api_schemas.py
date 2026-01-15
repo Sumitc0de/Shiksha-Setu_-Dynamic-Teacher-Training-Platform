@@ -4,22 +4,24 @@ from datetime import datetime
 
 class ClusterBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    region_type: str = Field(..., min_length=1, max_length=50)
-    language: str = Field(..., min_length=1, max_length=50)
-    infrastructure_constraints: Optional[str] = None
-    key_issues: Optional[str] = None
-    grade_range: Optional[str] = None
+    geographic_type: str = Field(..., description="Urban, Rural, or Tribal")
+    primary_language: str = Field(..., min_length=1, max_length=50)
+    infrastructure_level: str = Field(..., description="High, Medium, or Low")
+    specific_challenges: Optional[str] = Field(None, max_length=500)
+    total_teachers: int = Field(..., ge=1, le=10000)
+    additional_notes: Optional[str] = Field(None, max_length=500)
 
 class ClusterCreate(ClusterBase):
     pass
 
 class ClusterUpdate(BaseModel):
-    name: Optional[str] = None
-    region_type: Optional[str] = None
-    language: Optional[str] = None
-    infrastructure_constraints: Optional[str] = None
-    key_issues: Optional[str] = None
-    grade_range: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    geographic_type: Optional[str] = None
+    primary_language: Optional[str] = None
+    infrastructure_level: Optional[str] = None
+    specific_challenges: Optional[str] = None
+    total_teachers: Optional[int] = Field(None, ge=1, le=10000)
+    additional_notes: Optional[str] = None
 
 class ClusterResponse(ClusterBase):
     id: int
@@ -31,6 +33,9 @@ class ClusterResponse(ClusterBase):
 
 class ManualBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    language: str = Field(..., description="Content language")
+    cluster_id: Optional[int] = None
 
 class ManualCreate(ManualBase):
     filename: str
@@ -53,26 +58,29 @@ class ModuleBase(BaseModel):
     cluster_id: int
     original_content: str
     adapted_content: str
-    language: Optional[str] = None
+    target_language: Optional[str] = None
+    section_title: Optional[str] = None
 
 class ModuleCreate(ModuleBase):
     pass
 
 class ModuleResponse(ModuleBase):
     id: int
-    approved: bool
+    metadata: Optional[str] = None
     created_at: datetime
+    updated_at: datetime
     
     class Config:
         from_attributes = True
 
 class FeedbackBase(BaseModel):
     module_id: int
-    is_helpful: bool
+    rating: int = Field(..., ge=1, le=5, description="Rating from 1-5")
     comment: Optional[str] = None
 
-class FeedbackCreate(FeedbackBase):
-    pass
+class FeedbackCreate(BaseModel):
+    rating: int = Field(..., ge=1, le=5)
+    comment: Optional[str] = None
 
 class FeedbackResponse(FeedbackBase):
     id: int
@@ -84,5 +92,6 @@ class FeedbackResponse(FeedbackBase):
 class GenerateModuleRequest(BaseModel):
     manual_id: int
     cluster_id: int
-    topic: str = Field(..., min_length=1)
-    page_range: Optional[str] = None
+    original_content: str = Field(..., min_length=50, max_length=5000)
+    target_language: Optional[str] = None
+    section_title: Optional[str] = Field(None, max_length=200)

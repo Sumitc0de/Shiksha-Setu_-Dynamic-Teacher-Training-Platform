@@ -1,18 +1,18 @@
 from typing import List, Dict, Optional
 from core.config import settings
-from core.vector_store import SimpleVectorStore
+from core.vector_store import ChromaVectorStore
 import logging
 
 logger = logging.getLogger(__name__)
 
 class RAGEngine:
     def __init__(self):
-        # Use simple vector store instead of ChromaDB for Python 3.14 compatibility
-        self.vector_store = SimpleVectorStore(
+        # Use ChromaDB for efficient vector storage and retrieval
+        self.vector_store = ChromaVectorStore(
             persist_directory=settings.chroma_persist_directory
         )
         
-        logger.info("RAG Engine initialized with SimpleVectorStore")
+        logger.info("RAG Engine initialized with ChromaDB")
     
     def index_manual(self, manual_id: int, chunks: List[Dict]) -> bool:
         """

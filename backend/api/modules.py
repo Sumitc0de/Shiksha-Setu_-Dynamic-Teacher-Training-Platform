@@ -45,47 +45,43 @@ async def generate_module(
         )
     
     try:
-        # Step 1: Retrieve relevant content from manual using RAG
-        logger.info(f"Retrieving context for topic: {request.topic}")
-        original_content = rag_engine.get_context_for_topic(
-            topic=request.topic,
-            manual_id=request.manual_id,
-            max_chunks=3
-        )
-        
-        if not original_content:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No relevant content found for topic '{request.topic}' in manual"
-            )
-        
-        # Step 2: Build cluster profile dict
+        # Build cluster profile dict for AI engine
         cluster_profile = {
             "name": cluster.name,
-            "region_type": cluster.region_type,
-            "language": cluster.language,
-            "infrastructure_constraints": cluster.infrastructure_constraints or "None specified",
-            "key_issues": cluster.key_issues or "None specified",
-            "grade_range": cluster.grade_range or "Not specified"
+            "geographic_type": cluster.geographic_type,
+            "primary_language": cluster.primary_language,
+            "infrastructure_level": cluster.infrastructure_level,
+            "specific_challenges": cluster.specific_challenges or "None specified",
+            "total_teachers": cluster.total_teachers,
+            "additional_notes": cluster.additional_notes or "None specified"
         }
         
-        # Step 3: Generate adapted content using AI
+        # Generate adapted content using AI
         logger.info(f"Generating adapted content for cluster: {cluster.name}")
         adaptation_result = await ai_engine.adapt_content(
-            source_content=original_content,
+            source_content=request.original_content,
             cluster_profile=cluster_profile,
-            topic=request.topic
+            section_title=request.section_title or "Training Module"
         )
         
-        # Step 4: Create module record
+        # Determine target language (use request language or cluster's primary language)
+        target_lang = request.target_language or cluster.primary_language
+        
+        # Create module record
+        import json
         module = Module(
-            title=request.topic,
+            title=request.section_title or f"Module for {cluster.name}",
             manual_id=request.manual_id,
             cluster_id=request.cluster_id,
-            original_content=original_content[:5000],  # Store first 5000 chars
+            original_content=request.original_content,
             adapted_content=adaptation_result['adapted_content'],
-            language=cluster.language,
-            approved=False
+            target_language=target_lang,
+            section_title=request.section_title,
+            metadata=json.dumps({
+                "cluster_name": cluster.name,
+                "manual_title": manual.title,
+                "generated_at": datetime.utcnow().isoformat()
+            })
         )
         
         db.add(module)
@@ -179,8 +175,19 @@ async def submit_feedback(
             detail=f"Module with ID {module_id} not found"
         )
     
+    # Validate rating is between 1-5
+    if not 1 <= feedback.rating <= 5:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rating must be between 1 and 5"
+        )
+    
     from models.database_models import Feedback
-    db_feedback = Feedback(**feedback.model_dump())
+    db_feedback = Feedback(
+        module_id=module_id,
+        rating=feedback.rating,
+        comment=feedback.comment
+    )
     db.add(db_feedback)
     db.commit()
     db.refresh(db_feedback)

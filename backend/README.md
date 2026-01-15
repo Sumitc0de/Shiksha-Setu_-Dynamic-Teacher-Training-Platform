@@ -2,6 +2,19 @@
 
 FastAPI-based backend for the Dynamic Teacher Training Platform.
 
+## 🚨 Important Update (January 15, 2026)
+
+**API Schema has been updated to v1.1.** See [API_SCHEMA_UPDATE.md](./API_SCHEMA_UPDATE.md) for details.
+
+If you have an existing database:
+```bash
+python migrate_database.py  # Run migration script
+```
+
+For new setup, continue with instructions below.
+
+---
+
 ## Setup
 
 1. Create a virtual environment:

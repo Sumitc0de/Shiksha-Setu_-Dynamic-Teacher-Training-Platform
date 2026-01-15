@@ -16,7 +16,10 @@ rag_engine = RAGEngine()
 @router.post("/upload", response_model=ManualResponse, status_code=status.HTTP_201_CREATED)
 async def upload_manual(
     title: str,
+    language: str,
     file: UploadFile = File(...),
+    description: str = None,
+    cluster_id: int = None,
     db: Session = Depends(get_db)
 ):
     """Upload and process a training manual PDF"""
@@ -27,6 +30,16 @@ async def upload_manual(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Only PDF files are allowed"
         )
+    
+    # Validate cluster_id if provided
+    if cluster_id:
+        from models.database_models import Cluster
+        cluster = db.query(Cluster).filter(Cluster.id == cluster_id).first()
+        if not cluster:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Cluster with ID {cluster_id} not found"
+            )
     
     try:
         # Save uploaded file
@@ -39,8 +52,11 @@ async def upload_manual(
         # Create manual record
         manual = Manual(
             title=title,
+            description=description,
             filename=file.filename,
             file_path=file_path,
+            language=language,
+            cluster_id=cluster_id,
             total_pages=page_count,
             indexed=False
         )
