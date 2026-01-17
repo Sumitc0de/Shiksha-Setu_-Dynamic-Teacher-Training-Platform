@@ -4,7 +4,8 @@ from schemas.api_schemas import (
     ManualBase, ManualCreate, ManualResponse,
     ModuleBase, ModuleCreate, ModuleResponse,
     FeedbackBase, FeedbackCreate, FeedbackResponse,
-    GenerateModuleRequest
+    GenerateModuleRequest,
+    TeacherContactBase, TeacherContactCreate, TeacherContactResponse,
 )
 
 __all__ = [
@@ -12,5 +13,6 @@ __all__ = [
     "ManualBase", "ManualCreate", "ManualResponse",
     "ModuleBase", "ModuleCreate", "ModuleResponse",
     "FeedbackBase", "FeedbackCreate", "FeedbackResponse",
-    "GenerateModuleRequest"
+    "GenerateModuleRequest",
+    "TeacherContactBase", "TeacherContactCreate", "TeacherContactResponse",
 ]

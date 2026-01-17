@@ -103,3 +103,20 @@ class GenerateModuleRequest(BaseModel):
     cluster_id: int
     topic: str = Field(..., min_length=3, max_length=200, description="Topic to generate content for")
     target_language: Optional[str] = None
+
+
+class TeacherContactBase(BaseModel):
+    name: Optional[str] = Field(None, max_length=100, description="Optional teacher name")
+    phone_number: str = Field(..., min_length=8, max_length=32, description="Teacher WhatsApp number in Indian / E.164 format")
+
+
+class TeacherContactCreate(TeacherContactBase):
+    pass
+
+
+class TeacherContactResponse(TeacherContactBase):
+    id: int
+    cluster_id: int
+
+    class Config:
+        from_attributes = True
