@@ -47,12 +47,14 @@ async def upload_manual(
             file_path=file_path,
             total_pages=page_count,
             indexed=False,
-            processed="pending"
         )
         
         db.add(manual)
         db.commit()
         db.refresh(manual)
+
+        # Attach a transient status attribute for the current response (not stored in DB)
+        manual.processed = "pending"
         
         return manual
         

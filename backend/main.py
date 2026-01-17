@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
+
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -13,8 +15,28 @@ from dotenv import load_dotenv
 import os
 import logging
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from services.file_cleanup_service import FileCleanupService
+from core.database import SessionLocal
+
+scheduler = BackgroundScheduler()
+cleanup_service = FileCleanupService()
+
+# PDF Exporting
+from api import exports
+from fastapi.staticfiles import StaticFiles
+
 # Load environment variables
 load_dotenv()
+
+
+# Auto PDF Cleanup
+def run_pdf_cleanup():
+    db = SessionLocal()
+    try:
+        cleanup_service.cleanup_old_pdfs(db)
+    finally:
+        db.close()
 
 # Configure logging
 logging.basicConfig(
@@ -65,6 +87,24 @@ app.include_router(clusters_router)
 app.include_router(manuals_router)
 app.include_router(modules_router)
 app.include_router(translation_router)
+app.include_router(exports.router)
+
+
+# PDF static exports directory (use absolute path so it works regardless of CWD)
+exports_dir = backend_dir / "exports"
+app.mount("/exports", StaticFiles(directory=str(exports_dir)), name="exports")
+
+
+@app.on_event("startup")
+def start_cleanup_scheduler():
+    scheduler.add_job(
+        run_pdf_cleanup,
+        "interval",
+        hours=24,   # runs once daily
+        id="pdf_cleanup_job"
+    )
+    scheduler.start()
+
 
 @app.get("/")
 async def root():

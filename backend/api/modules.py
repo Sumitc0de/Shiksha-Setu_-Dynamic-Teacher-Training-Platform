@@ -1,13 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Dict
-from datetime import datetime
+from typing import List
 from core.database import get_db
-from models.database_models import Module, Manual, Cluster
+from models.database_models import Module, Manual, Cluster, ExportedPDF
 from schemas.api_schemas import ModuleResponse, GenerateModuleRequest, FeedbackCreate, FeedbackResponse
 from services.rag_engine import RAGEngine
 from services.ai_engine import AIAdaptationEngine
 import logging
+
+# PDF Exporting requirements
+from services.pdf_export_service import PDFExportService
+pdf_service = PDFExportService()
+
 
 logger = logging.getLogger(__name__)
 
@@ -15,13 +19,6 @@ router = APIRouter(prefix="/api/modules", tags=["Modules"])
 
 rag_engine = RAGEngine()
 ai_engine = AIAdaptationEngine()
-
-
-@router.get("/languages", response_model=Dict[str, str])
-async def get_supported_languages():
-    """Get list of supported languages for module generation"""
-    return ai_engine.get_supported_languages()
-
 
 @router.post("/generate", response_model=ModuleResponse, status_code=status.HTTP_201_CREATED)
 async def generate_module(
@@ -53,20 +50,21 @@ async def generate_module(
         )
     
     try:
-        # Retrieve relevant content from RAG using the topic
-        logger.info(f"Retrieving content for topic: {request.topic}")
-        rag_results = rag_engine.search(request.topic, manual_id=request.manual_id, top_k=5)
+        # Step 1: Retrieve relevant content from manual using RAG
+        logger.info(f"Retrieving context for topic: {request.topic}")
+        original_content = rag_engine.get_context_for_topic(
+            topic=request.topic,
+            manual_id=request.manual_id,
+            max_chunks=3
+        )
         
-        if not rag_results:
+        if not original_content:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No relevant content found for topic '{request.topic}' in the manual"
+                detail=f"No relevant content found for topic '{request.topic}' in manual"
             )
         
-        # Combine retrieved content
-        original_content = "\n\n".join([result['content'] for result in rag_results])
-        
-        # Build cluster profile dict for AI engine
+        # Step 2: Build cluster profile dict
         cluster_profile = {
             "name": cluster.name,
             "region_type": cluster.region_type,
@@ -76,28 +74,22 @@ async def generate_module(
             "grade_range": cluster.grade_range or "Not specified"
         }
         
-        # Determine target language (user preference > cluster default)
-        target_lang = request.target_language or cluster.language or "english"
-        target_lang = target_lang.lower()
-        
-        # Generate adapted content using AI with translation
-        logger.info(f"Generating adapted content for cluster: {cluster.name} in language: {target_lang}")
+        # Step 3: Generate adapted content using AI
+        logger.info(f"Generating adapted content for cluster: {cluster.name}")
         adaptation_result = await ai_engine.adapt_content(
             source_content=original_content,
             cluster_profile=cluster_profile,
-            topic=request.topic,
-            target_language=target_lang
+            topic=request.topic
         )
         
-        # Create module record
+        # Step 4: Create module record
         module = Module(
-            title=f"{request.topic} - {cluster.name}",
+            title=request.topic,
             manual_id=request.manual_id,
             cluster_id=request.cluster_id,
-            original_content=original_content,
+            original_content=original_content[:5000],  # Store first 5000 chars
             adapted_content=adaptation_result['adapted_content'],
-            language=target_lang,
-            learning_objective=adaptation_result.get('learning_objective', ''),
+            language=cluster.language,
             approved=False
         )
         
@@ -108,8 +100,6 @@ async def generate_module(
         logger.info(f"Module generated successfully with ID: {module.id}")
         return module
         
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Error generating module: {str(e)}")
         raise HTTPException(
@@ -147,21 +137,66 @@ async def get_module(module_id: int, db: Session = Depends(get_db)):
         )
     return module
 
+# Auto PDF Export when Module is Approved
 @router.patch("/{module_id}/approve")
-async def approve_module(module_id: int, db: Session = Depends(get_db)):
-    """Approve a module for distribution"""
+async def approve_module(
+    module_id: int,
+    db: Session = Depends(get_db)
+):
+    """Approve a module and generate its PDF (PATCH)."""
+    # Step 1: Fetch module
     module = db.query(Module).filter(Module.id == module_id).first()
     if not module:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=404,
             detail=f"Module with ID {module_id} not found"
         )
-    
+
+    # Step 2: Mark approved
     module.approved = True
     db.commit()
     db.refresh(module)
-    
-    return {"message": "Module approved successfully", "module_id": module_id}
+
+    # Step 3: Auto-export PDF (LANGUAGE PRESERVED)
+    pdf_result = pdf_service.generate_module_pdf(
+        module_title=module.title,
+        module_content=module.adapted_content,
+        language=module.language or "unknown"
+    )
+
+    # Step 4: Create a new ExportedPDF record for this approval event
+    pdf_record = ExportedPDF(
+        module_id=module.id,
+        filename=pdf_result["filename"],
+        file_path=pdf_result["file_path"],
+        language=module.language,
+    )
+    db.add(pdf_record)
+
+    db.commit()
+    db.refresh(pdf_record)
+
+    # Step 5: Return approval + PDF info, including pdf_id
+    return {
+        "status": "success",
+        "message": "Module approved and PDF generated successfully",
+        "module_id": module.id,
+        "language": module.language,
+        "pdf_id": pdf_record.id,
+    }
+
+
+@router.get("/{module_id}/approve")
+async def approve_module_get(
+    module_id: int,
+    db: Session = Depends(get_db)
+):
+    """GET alias for approving a module and exporting PDF.
+
+    Allows browser-friendly calls to /api/modules/{id}/approve.
+    """
+    return await approve_module(module_id=module_id, db=db)
+
 
 @router.delete("/{module_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_module(module_id: int, db: Session = Depends(get_db)):
@@ -194,19 +229,8 @@ async def submit_feedback(
             detail=f"Module with ID {module_id} not found"
         )
     
-    # Validate rating is between 1-5
-    if not 1 <= feedback.rating <= 5:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Rating must be between 1 and 5"
-        )
-    
     from models.database_models import Feedback
-    db_feedback = Feedback(
-        module_id=module_id,
-        rating=feedback.rating,
-        comment=feedback.comment
-    )
+    db_feedback = Feedback(**feedback.model_dump())
     db.add(db_feedback)
     db.commit()
     db.refresh(db_feedback)

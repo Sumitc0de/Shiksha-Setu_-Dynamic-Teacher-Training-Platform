@@ -30,6 +30,9 @@ beautifulsoup4==4.14.3               # Required by deep-translator
 PyPDF2==3.0.1
 pdfplumber==0.11.9
 
+# PDF Export
+reportlab==4.4.9
+
 # HTTP Client (Python 3.14 compatible versions)
 httpx==0.28.1
 httpcore==1.0.9

@@ -76,7 +76,8 @@ class ModuleResponse(BaseModel):
     learning_objective: Optional[str] = None
     approved: bool = False
     created_at: datetime
-    updated_at: datetime
+    # Make updated_at optional so it doesn't break with existing Module model/DB
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
