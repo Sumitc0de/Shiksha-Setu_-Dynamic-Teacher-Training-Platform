@@ -4,25 +4,28 @@ from datetime import datetime
 
 class ClusterBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    region_type: str = Field(..., description="Urban, Rural, Tribal, etc.")
-    language: str = Field(..., min_length=1, max_length=50)
-    infrastructure_constraints: Optional[str] = Field(None)
-    key_issues: Optional[str] = Field(None)
-    grade_range: Optional[str] = Field(None, max_length=50)
+    geographic_type: str = Field(..., description="Urban, Rural, Tribal, etc.")
+    primary_language: str = Field(..., min_length=1, max_length=50)
+    infrastructure_level: str = Field(..., description="High, Medium, Low")
+    total_teachers: int = Field(..., ge=1)
+    specific_challenges: Optional[str] = Field(None)
+    additional_notes: Optional[str] = Field(None)
 
 class ClusterCreate(ClusterBase):
     pass
 
 class ClusterUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
-    region_type: Optional[str] = None
-    language: Optional[str] = None
-    infrastructure_constraints: Optional[str] = None
-    key_issues: Optional[str] = None
-    grade_range: Optional[str] = None
+    geographic_type: Optional[str] = None
+    primary_language: Optional[str] = None
+    infrastructure_level: Optional[str] = None
+    total_teachers: Optional[int] = Field(None, ge=1)
+    specific_challenges: Optional[str] = None
+    additional_notes: Optional[str] = None
 
 class ClusterResponse(ClusterBase):
     id: int
+    pinned: bool = False
     created_at: datetime
     updated_at: datetime
     
@@ -45,6 +48,7 @@ class ManualResponse(BaseModel):
     total_pages: Optional[int] = None
     upload_date: datetime
     indexed: bool
+    pinned: bool = False
     processed: Optional[str] = None
     detected_language: Optional[str] = None
     adapted_summary: Optional[str] = None

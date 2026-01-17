@@ -155,8 +155,8 @@ async def index_manual(manual_id: int, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=List[ManualResponse])
 async def list_manuals(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """List all training manuals"""
-    manuals = db.query(Manual).offset(skip).limit(limit).all()
+    """List all training manuals with pinned items first"""
+    manuals = db.query(Manual).order_by(Manual.pinned.desc(), Manual.upload_date.desc()).offset(skip).limit(limit).all()
     return manuals
 
 @router.get("/{manual_id}", response_model=ManualResponse)
@@ -220,3 +220,19 @@ async def delete_manual(manual_id: int, db: Session = Depends(get_db)):
     db.commit()
     
     return None
+
+@router.patch("/{manual_id}/pin", response_model=ManualResponse)
+async def toggle_manual_pin(manual_id: int, db: Session = Depends(get_db)):
+    """Toggle pin status for a manual"""
+    manual = db.query(Manual).filter(Manual.id == manual_id).first()
+    if not manual:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Manual with ID {manual_id} not found"
+        )
+    
+    manual.pinned = not manual.pinned
+    db.commit()
+    db.refresh(manual)
+    
+    return manual

@@ -25,10 +25,12 @@ import {
   ChevronDown,
   ChevronUp,
   BookMarked,
+  Pin,
+  PinOff,
 } from 'lucide-react';
 import { PageTransition, FadeIn, listContainerVariants, listItemVariants } from '../ui/PageTransition';
 import { PageHeader, Modal, Alert, EmptyState, ConfirmDialog, Badge, StatCard, LoadingSpinner } from '../ui/SharedComponents';
-import { getManuals, uploadManual, indexManual, deleteManual } from '../../services/api';
+import { getManuals, uploadManual, indexManual, deleteManual, toggleManualPin } from '../../services/api';
 
 // Language display names with native script
 const LANGUAGE_DISPLAY = {
@@ -152,6 +154,20 @@ export default function ManualsPage() {
       setAlert({ type: 'error', message: error.message || 'Failed to delete manual' });
     } finally {
       setDeleteConfirm(null);
+    }
+  };
+
+  const handleTogglePin = async (manual, e) => {
+    e.stopPropagation();
+    try {
+      await toggleManualPin(manual.id);
+      setAlert({ 
+        type: 'success', 
+        message: manual.pinned ? 'Manual unpinned' : 'Manual pinned for quick access' 
+      });
+      loadManuals();
+    } catch (error) {
+      setAlert({ type: 'error', message: error.message || 'Failed to update pin status' });
     }
   };
 
@@ -318,10 +334,13 @@ export default function ManualsPage() {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <h3 
-                      className="text-lg font-medium mb-1 truncate transition-colors group-hover:text-setu-700"
+                      className="text-lg font-medium mb-1 truncate transition-colors group-hover:text-setu-700 flex items-center gap-2"
                       style={{ color: 'var(--ink-800)' }}
                     >
                       {manual.title}
+                      {manual.pinned && (
+                        <Pin className="w-4 h-4 fill-current flex-shrink-0" style={{ color: 'var(--setu-600)' }} />
+                      )}
                     </h3>
                     <p className="text-sm truncate mb-3" style={{ color: 'var(--ink-400)' }}>
                       {manual.filename}
@@ -409,6 +428,14 @@ export default function ManualsPage() {
 
                   {/* Actions */}
                   <div className="flex flex-col gap-2 justify-center">
+                    <button
+                      onClick={(e) => handleTogglePin(manual, e)}
+                      className={`btn btn-outline btn-sm ${manual.pinned ? 'btn-primary' : ''}`}
+                      title={manual.pinned ? 'Unpin manual' : 'Pin manual'}
+                    >
+                      {manual.pinned ? <Pin className="w-4 h-4 fill-current" /> : <PinOff className="w-4 h-4" />}
+                      {manual.pinned ? 'Pinned' : 'Pin'}
+                    </button>
                     {!manual.indexed && (
                       <button
                         onClick={() => handleIndex(manual)}
