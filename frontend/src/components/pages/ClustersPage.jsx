@@ -40,6 +40,8 @@ const LANGUAGES = [
   'Punjabi', 'Odia', 'Urdu', 'Gondi', 'Bhili', 'Santali'
 ];
 
+const INFRASTRUCTURE_LEVELS = ['High', 'Medium', 'Low'];
+
 const GRADE_RANGES = ['1-5', '1-8', '6-8', '6-10', '9-12', '1-12'];
 
 const REGION_ICONS = {
@@ -65,11 +67,12 @@ export default function ClustersPage() {
 
   const [formData, setFormData] = useState({
     name: '',
-    region_type: '',
-    language: '',
-    infrastructure_constraints: '',
-    key_issues: '',
-    grade_range: '',
+    geographic_type: '',
+    primary_language: '',
+    infrastructure_level: '',
+    total_teachers: 0,
+    specific_challenges: '',
+    additional_notes: '',
   });
 
   const loadClusters = useCallback(async () => {
@@ -91,11 +94,12 @@ export default function ClustersPage() {
   const resetForm = () => {
     setFormData({
       name: '',
-      region_type: '',
-      language: '',
-      infrastructure_constraints: '',
-      key_issues: '',
-      grade_range: '',
+      geographic_type: '',
+      primary_language: '',
+      infrastructure_level: '',
+      total_teachers: 0,
+      specific_challenges: '',
+      additional_notes: '',
     });
     setEditingCluster(null);
   };
@@ -108,11 +112,12 @@ export default function ClustersPage() {
   const openEditModal = (cluster) => {
     setFormData({
       name: cluster.name,
-      region_type: cluster.region_type,
-      language: cluster.language,
-      infrastructure_constraints: cluster.infrastructure_constraints || '',
-      key_issues: cluster.key_issues || '',
-      grade_range: cluster.grade_range || '',
+      geographic_type: cluster.geographic_type,
+      primary_language: cluster.primary_language,
+      infrastructure_level: cluster.infrastructure_level,
+      total_teachers: cluster.total_teachers,
+      specific_challenges: cluster.specific_challenges || '',
+      additional_notes: cluster.additional_notes || '',
     });
     setEditingCluster(cluster);
     setShowModal(true);
@@ -233,7 +238,7 @@ export default function ClustersPage() {
             animate="visible"
           >
             {clusters.map((cluster) => {
-              const RegionIcon = getRegionIcon(cluster.region_type);
+              const RegionIcon = getRegionIcon(cluster.geographic_type);
               return (
                 <motion.div
                   key={cluster.id}
@@ -277,41 +282,45 @@ export default function ClustersPage() {
                     <div className="flex flex-wrap gap-2 mb-4">
                       <Badge variant="primary">
                         <MapPin className="w-3 h-3" />
-                        {cluster.region_type}
+                        {cluster.geographic_type}
                       </Badge>
                       <Badge variant="default">
                         <Languages className="w-3 h-3" />
-                        {cluster.language}
+                        {cluster.primary_language}
                       </Badge>
-                      {cluster.grade_range && (
+                      <Badge variant="default">
+                        <GraduationCap className="w-3 h-3" />
+                        {cluster.total_teachers} teachers
+                      </Badge>
+                      {cluster.infrastructure_level && (
                         <Badge variant="default">
-                          <GraduationCap className="w-3 h-3" />
-                          Grades {cluster.grade_range}
+                          <Settings className="w-3 h-3" />
+                          {cluster.infrastructure_level} Infrastructure
                         </Badge>
                       )}
                     </div>
 
                     {/* Details */}
-                    {cluster.infrastructure_constraints && (
+                    {cluster.specific_challenges && (
                       <div className="mb-3">
                         <div className="flex items-center gap-1 text-xs mb-1" style={{ color: 'var(--ink-400)' }}>
-                          <Settings className="w-3 h-3" />
-                          Infrastructure
+                          <AlertTriangle className="w-3 h-3" />
+                          Challenges
                         </div>
                         <p className="text-sm line-clamp-2" style={{ color: 'var(--ink-600)' }}>
-                          {cluster.infrastructure_constraints}
+                          {cluster.specific_challenges}
                         </p>
                       </div>
                     )}
 
-                    {cluster.key_issues && (
+                    {cluster.additional_notes && (
                       <div className="mb-3">
                         <div className="flex items-center gap-1 text-xs mb-1" style={{ color: 'var(--ink-400)' }}>
-                          <AlertTriangle className="w-3 h-3" />
-                          Key Issues
+                          <Settings className="w-3 h-3" />
+                          Additional Notes
                         </div>
                         <p className="text-sm line-clamp-2" style={{ color: 'var(--ink-600)' }}>
-                          {cluster.key_issues}
+                          {cluster.additional_notes}
                         </p>
                       </div>
                     )}
@@ -382,12 +391,12 @@ export default function ClustersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="form-group">
                   <label className="form-label">
-                    Region Type <span className="form-required">*</span>
+                    Geographic Type <span className="form-required">*</span>
                   </label>
                   <select
                     className="form-input form-select"
-                    value={formData.region_type}
-                    onChange={(e) => setFormData({ ...formData, region_type: e.target.value })}
+                    value={formData.geographic_type}
+                    onChange={(e) => setFormData({ ...formData, geographic_type: e.target.value })}
                     required
                   >
                     <option value="">Select region...</option>
@@ -403,8 +412,8 @@ export default function ClustersPage() {
                   </label>
                   <select
                     className="form-input form-select"
-                    value={formData.language}
-                    onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                    value={formData.primary_language}
+                    onChange={(e) => setFormData({ ...formData, primary_language: e.target.value })}
                     required
                   >
                     <option value="">Select language...</option>
@@ -415,45 +424,65 @@ export default function ClustersPage() {
                 </div>
               </div>
 
-              {/* Grade Range */}
-              <div className="form-group">
-                <label className="form-label">Grade Range</label>
-                <select
-                  className="form-input form-select"
-                  value={formData.grade_range}
-                  onChange={(e) => setFormData({ ...formData, grade_range: e.target.value })}
-                >
-                  <option value="">Select grades...</option>
-                  {GRADE_RANGES.map((range) => (
-                    <option key={range} value={range}>Grades {range}</option>
-                  ))}
-                </select>
+              {/* Infrastructure Level and Total Teachers */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="form-label">
+                    Infrastructure Level <span className="form-required">*</span>
+                  </label>
+                  <select
+                    className="form-input form-select"
+                    value={formData.infrastructure_level}
+                    onChange={(e) => setFormData({ ...formData, infrastructure_level: e.target.value })}
+                    required
+                  >
+                    <option value="">Select level...</option>
+                    {INFRASTRUCTURE_LEVELS.map((level) => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    Total Teachers <span className="form-required">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="e.g., 50"
+                    value={formData.total_teachers}
+                    onChange={(e) => setFormData({ ...formData, total_teachers: parseInt(e.target.value) || 0 })}
+                    min="1"
+                    required
+                  />
+                </div>
               </div>
 
-              {/* Infrastructure */}
+              {/* Specific Challenges */}
               <div className="form-group">
-                <label className="form-label">Infrastructure Constraints</label>
+                <label className="form-label">Specific Challenges</label>
                 <textarea
                   className="form-input form-textarea"
                   rows={3}
                   placeholder="e.g., Limited internet, no projectors, irregular electricity..."
-                  value={formData.infrastructure_constraints}
-                  onChange={(e) => setFormData({ ...formData, infrastructure_constraints: e.target.value })}
+                  value={formData.specific_challenges}
+                  onChange={(e) => setFormData({ ...formData, specific_challenges: e.target.value })}
                 />
-                <p className="form-hint">Describe any infrastructure limitations</p>
+                <p className="form-hint">Describe any specific challenges or limitations</p>
               </div>
 
-              {/* Key Issues */}
+              {/* Additional Notes */}
               <div className="form-group">
-                <label className="form-label">Key Issues</label>
+                <label className="form-label">Additional Notes</label>
                 <textarea
                   className="form-input form-textarea"
                   rows={3}
                   placeholder="e.g., High dropout rates, language barriers, seasonal migration..."
-                  value={formData.key_issues}
-                  onChange={(e) => setFormData({ ...formData, key_issues: e.target.value })}
+                  value={formData.additional_notes}
+                  onChange={(e) => setFormData({ ...formData, additional_notes: e.target.value })}
                 />
-                <p className="form-hint">Educational challenges specific to this cluster</p>
+                <p className="form-hint">Any other relevant information about this cluster</p>
               </div>
             </div>
 

@@ -170,7 +170,7 @@ const ModuleGenerator = () => {
                       <option value="">Choose a cluster...</option>
                       {clusters.map((cluster) => (
                         <option key={cluster.id} value={cluster.id}>
-                          {cluster.name} ({cluster.region_type} - {cluster.language})
+                          {cluster.name} ({cluster.geographic_type} - {cluster.primary_language})
                         </option>
                       ))}
                     </select>

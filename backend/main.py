@@ -7,10 +7,10 @@ backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
 
-
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from dotenv import load_dotenv
 import os
 import logging
@@ -56,9 +56,23 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing database...")
     init_db()
     logger.info("Database initialized successfully")
+    
+    # Start PDF cleanup scheduler
+    scheduler.add_job(
+        run_pdf_cleanup,
+        "interval",
+        hours=24,   # runs once daily
+        id="pdf_cleanup_job"
+    )
+    scheduler.start()
+    logger.info("Started PDF cleanup scheduler")
+    
     yield
+    
     # Shutdown
     logger.info("Shutting down application...")
+    scheduler.shutdown()
+    logger.info("Stopped PDF cleanup scheduler")
 
 app = FastAPI(
     title="Shiksha-Setu API",
@@ -66,6 +80,25 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Log request validation failures with body to make 422s debuggable."""
+    try:
+        body_bytes = await request.body()
+        body_text = body_bytes.decode("utf-8", errors="replace")
+    except Exception:
+        body_text = "<unavailable>"
+
+    logger.error(
+        "422 validation error: %s %s errors=%s body=%s",
+        request.method,
+        request.url.path,
+        exc.errors(),
+        body_text,
+    )
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 app.add_middleware(
     CORSMiddleware,
@@ -93,17 +126,6 @@ app.include_router(exports.router)
 # PDF static exports directory (use absolute path so it works regardless of CWD)
 exports_dir = backend_dir / "exports"
 app.mount("/exports", StaticFiles(directory=str(exports_dir)), name="exports")
-
-
-@app.on_event("startup")
-def start_cleanup_scheduler():
-    scheduler.add_job(
-        run_pdf_cleanup,
-        "interval",
-        hours=24,   # runs once daily
-        id="pdf_cleanup_job"
-    )
-    scheduler.start()
 
 
 @app.get("/")

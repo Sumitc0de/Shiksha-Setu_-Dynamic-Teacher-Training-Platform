@@ -54,11 +54,12 @@ export const getCluster = (id) => apiClient.get(`/api/clusters/${id}`);
 export const createCluster = (clusterData) => {
   const payload = {
     name: clusterData.name,
-    region_type: clusterData.region_type,
-    language: clusterData.language,
-    infrastructure_constraints: clusterData.infrastructure_constraints || null,
-    key_issues: clusterData.key_issues || null,
-    grade_range: clusterData.grade_range || null,
+    geographic_type: clusterData.geographic_type,
+    primary_language: clusterData.primary_language,
+    infrastructure_level: clusterData.infrastructure_level,
+    total_teachers: clusterData.total_teachers,
+    specific_challenges: clusterData.specific_challenges || null,
+    additional_notes: clusterData.additional_notes || null,
   };
   return apiClient.post('/api/clusters/', payload);
 };
@@ -66,11 +67,12 @@ export const createCluster = (clusterData) => {
 export const updateCluster = (id, clusterData) => {
   const payload = {
     name: clusterData.name,
-    region_type: clusterData.region_type,
-    language: clusterData.language,
-    infrastructure_constraints: clusterData.infrastructure_constraints || null,
-    key_issues: clusterData.key_issues || null,
-    grade_range: clusterData.grade_range || null,
+    geographic_type: clusterData.geographic_type,
+    primary_language: clusterData.primary_language,
+    infrastructure_level: clusterData.infrastructure_level,
+    total_teachers: clusterData.total_teachers,
+    specific_challenges: clusterData.specific_challenges || null,
+    additional_notes: clusterData.additional_notes || null,
   };
   return apiClient.put(`/api/clusters/${id}`, payload);
 };

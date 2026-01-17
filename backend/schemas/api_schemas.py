@@ -4,22 +4,24 @@ from datetime import datetime
 
 class ClusterBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    region_type: str = Field(..., description="Urban, Rural, Tribal Belt, etc.")
-    language: str = Field(..., min_length=1, max_length=50)
-    infrastructure_constraints: Optional[str] = Field(None, max_length=500)
-    key_issues: Optional[str] = Field(None, max_length=500)
-    grade_range: Optional[str] = Field(None, max_length=50)
+    geographic_type: str = Field(..., description="Urban, Rural, Tribal, etc.")
+    primary_language: str = Field(..., min_length=1, max_length=50)
+    infrastructure_level: str = Field(..., description="High, Medium, or Low")
+    total_teachers: int = Field(..., gt=0)
+    specific_challenges: Optional[str] = Field(None)
+    additional_notes: Optional[str] = Field(None)
 
 class ClusterCreate(ClusterBase):
     pass
 
 class ClusterUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
-    region_type: Optional[str] = None
-    language: Optional[str] = None
-    infrastructure_constraints: Optional[str] = None
-    key_issues: Optional[str] = None
-    grade_range: Optional[str] = None
+    geographic_type: Optional[str] = None
+    primary_language: Optional[str] = None
+    infrastructure_level: Optional[str] = None
+    total_teachers: Optional[int] = Field(None, gt=0)
+    specific_challenges: Optional[str] = None
+    additional_notes: Optional[str] = None
 
 class ClusterResponse(ClusterBase):
     id: int
@@ -101,5 +103,5 @@ class FeedbackResponse(FeedbackBase):
 class GenerateModuleRequest(BaseModel):
     manual_id: int
     cluster_id: int
-    topic: str = Field(..., min_length=3, max_length=200, description="Topic to generate content for")
+    topic: str = Field(..., min_length=2, max_length=200, description="Topic to generate content for")
     target_language: Optional[str] = None

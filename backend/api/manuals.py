@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import os
 from core.database import get_db
 from models.database_models import Manual
@@ -20,6 +20,7 @@ rag_engine = RAGEngine()
 @router.post("/upload", response_model=ManualResponse, status_code=status.HTTP_201_CREATED)
 async def upload_manual(
     title: str,
+    language: Optional[str] = None,
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
@@ -33,6 +34,8 @@ async def upload_manual(
         )
     
     try:
+        normalized_language = (language or "").strip() or "unknown"
+
         # Save uploaded file
         file_content = await file.read()
         file_path = pdf_processor.save_uploaded_file(file_content, file.filename)
@@ -45,6 +48,7 @@ async def upload_manual(
             title=title,
             filename=file.filename,
             file_path=file_path,
+            language=normalized_language,
             total_pages=page_count,
             indexed=False,
         )
@@ -59,6 +63,9 @@ async def upload_manual(
         return manual
         
     except Exception as e:
+        import traceback
+        logger.error(f"Error uploading manual: {str(e)}")
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error uploading manual: {str(e)}"

@@ -176,8 +176,8 @@ export default function GeneratorPage() {
   useEffect(() => {
     if (formData.cluster_id) {
       const selectedCluster = clusters.find((c) => c.id === parseInt(formData.cluster_id));
-      if (selectedCluster && selectedCluster.language) {
-        const clusterLang = selectedCluster.language.toLowerCase();
+      if (selectedCluster && selectedCluster.primary_language) {
+        const clusterLang = selectedCluster.primary_language.toLowerCase();
         if (languages[clusterLang]) {
           setFormData((prev) => ({ ...prev, target_language: clusterLang }));
         }
@@ -188,8 +188,15 @@ export default function GeneratorPage() {
   const handleGenerate = async (e) => {
     e.preventDefault();
 
-    if (!formData.manual_id || !formData.cluster_id || !formData.topic.trim()) {
+    const topic = (formData.topic || '').trim();
+
+    if (!formData.manual_id || !formData.cluster_id || !topic) {
       setAlert({ type: 'error', message: 'Please fill in all required fields' });
+      return;
+    }
+
+    if (topic.length < 2) {
+      setAlert({ type: 'error', message: 'Topic must be at least 2 characters' });
       return;
     }
 
@@ -345,7 +352,7 @@ export default function GeneratorPage() {
                           <option value="">Choose a cluster...</option>
                           {clusters.map((cluster) => (
                             <option key={cluster.id} value={cluster.id}>
-                              {cluster.name} ({cluster.region_type} - {cluster.language})
+                              {cluster.name} ({cluster.geographic_type} - {cluster.primary_language})
                             </option>
                           ))}
                         </select>
@@ -406,11 +413,11 @@ export default function GeneratorPage() {
                           </p>
                           <p className="font-medium text-setu-800">{selectedCluster.name}</p>
                           <p className="text-sm text-setu-600">
-                            {selectedCluster.region_type} • {selectedCluster.language}
+                            {selectedCluster.geographic_type} • {selectedCluster.primary_language}
                           </p>
-                          {selectedCluster.key_issues && (
+                          {selectedCluster.specific_challenges && (
                             <p className="text-xs text-setu-500 mt-2 line-clamp-2">
-                              Issues: {selectedCluster.key_issues}
+                              Challenges: {selectedCluster.specific_challenges}
                             </p>
                           )}
                         </div>

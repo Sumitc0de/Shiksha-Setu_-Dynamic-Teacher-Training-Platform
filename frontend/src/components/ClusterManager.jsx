@@ -13,11 +13,12 @@ const ClusterManager = () => {
   const [editingCluster, setEditingCluster] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    region_type: '',
-    language: '',
-    infrastructure_constraints: '',
-    key_issues: '',
-    grade_range: ''
+    geographic_type: '',
+    primary_language: '',
+    infrastructure_level: '',
+    total_teachers: 0,
+    specific_challenges: '',
+    additional_notes: ''
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -54,11 +55,12 @@ const ClusterManager = () => {
   const resetForm = () => {
     setFormData({
       name: '',
-      region_type: '',
-      language: '',
-      infrastructure_constraints: '',
-      key_issues: '',
-      grade_range: ''
+      geographic_type: '',
+      primary_language: '',
+      infrastructure_level: '',
+      total_teachers: 0,
+      specific_challenges: '',
+      additional_notes: ''
     });
     setEditingCluster(null);
     setError('');
@@ -72,11 +74,12 @@ const ClusterManager = () => {
   const openEditModal = (cluster) => {
     setFormData({
       name: cluster.name,
-      region_type: cluster.region_type,
-      language: cluster.language,
-      infrastructure_constraints: cluster.infrastructure_constraints || '',
-      key_issues: cluster.key_issues || '',
-      grade_range: cluster.grade_range || ''
+      geographic_type: cluster.geographic_type,
+      primary_language: cluster.primary_language,
+      infrastructure_level: cluster.infrastructure_level,
+      total_teachers: cluster.total_teachers,
+      specific_challenges: cluster.specific_challenges || '',
+      additional_notes: cluster.additional_notes || ''
     });
     setEditingCluster(cluster);
     setShowModal(true);
@@ -182,7 +185,7 @@ const ClusterManager = () => {
             <div key={cluster.id} className="cluster-card">
               <div className="cluster-header">
                 <div className="cluster-icon">
-                  {getRegionIcon(cluster.region_type)}
+                  {getRegionIcon(cluster.geographic_type)}
                 </div>
                 <div className="cluster-actions">
                   <button 
@@ -205,24 +208,23 @@ const ClusterManager = () => {
               <h3 className="cluster-name">{cluster.name}</h3>
               
               <div className="cluster-badges">
-                <span className="cluster-badge region">{cluster.region_type}</span>
-                <span className="cluster-badge language">{cluster.language}</span>
-                {cluster.grade_range && (
-                  <span className="cluster-badge grade">Grades {cluster.grade_range}</span>
-                )}
+                <span className="cluster-badge region">{cluster.geographic_type}</span>
+                <span className="cluster-badge language">{cluster.primary_language}</span>
+                <span className="cluster-badge grade">{cluster.total_teachers} teachers</span>
+                <span className="cluster-badge infrastructure">{cluster.infrastructure_level}</span>
               </div>
 
-              {cluster.infrastructure_constraints && (
+              {cluster.specific_challenges && (
                 <div className="cluster-section">
-                  <span className="section-label"><Settings size={14} /> Infrastructure</span>
-                  <p>{cluster.infrastructure_constraints}</p>
+                  <span className="section-label"><AlertTriangle size={14} /> Challenges</span>
+                  <p>{cluster.specific_challenges}</p>
                 </div>
               )}
 
-              {cluster.key_issues && (
+              {cluster.additional_notes && (
                 <div className="cluster-section">
-                  <span className="section-label"><AlertTriangle size={14} /> Key Issues</span>
-                  <p>{cluster.key_issues}</p>
+                  <span className="section-label"><Settings size={14} /> Notes</span>
+                  <p>{cluster.additional_notes}</p>
                 </div>
               )}
 
@@ -268,12 +270,12 @@ const ClusterManager = () => {
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">
-                      Region Type <span className="required">*</span>
+                      Geographic Type <span className="required">*</span>
                     </label>
                     <select
                       className="form-control"
-                      value={formData.region_type}
-                      onChange={(e) => setFormData({...formData, region_type: e.target.value})}
+                      value={formData.geographic_type}
+                      onChange={(e) => setFormData({...formData, geographic_type: e.target.value})}
                       required
                     >
                       <option value="">Select region...</option>
@@ -289,8 +291,8 @@ const ClusterManager = () => {
                     </label>
                     <select
                       className="form-control"
-                      value={formData.language}
-                      onChange={(e) => setFormData({...formData, language: e.target.value})}
+                      value={formData.primary_language}
+                      onChange={(e) => setFormData({...formData, primary_language: e.target.value})}
                       required
                     >
                       <option value="">Select language...</option>
@@ -301,42 +303,62 @@ const ClusterManager = () => {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Grade Range</label>
-                  <select
-                    className="form-control"
-                    value={formData.grade_range}
-                    onChange={(e) => setFormData({...formData, grade_range: e.target.value})}
-                  >
-                    <option value="">Select grades...</option>
-                    {gradeRanges.map((range) => (
-                      <option key={range} value={range}>Grades {range}</option>
-                    ))}
-                  </select>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">
+                      Infrastructure Level <span className="required">*</span>
+                    </label>
+                    <select
+                      className="form-control"
+                      value={formData.infrastructure_level}
+                      onChange={(e) => setFormData({...formData, infrastructure_level: e.target.value})}
+                      required
+                    >
+                      <option value="">Select level...</option>
+                      <option value="High">High</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Low">Low</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">
+                      Total Teachers <span className="required">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="e.g., 50"
+                      value={formData.total_teachers}
+                      onChange={(e) => setFormData({...formData, total_teachers: parseInt(e.target.value) || 0})}
+                      min="1"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Infrastructure Constraints</label>
+                  <label className="form-label">Specific Challenges</label>
                   <textarea
                     className="form-control"
                     placeholder="e.g., No science lab, Limited electricity, Single classroom"
-                    value={formData.infrastructure_constraints}
-                    onChange={(e) => setFormData({...formData, infrastructure_constraints: e.target.value})}
+                    value={formData.specific_challenges}
+                    onChange={(e) => setFormData({...formData, specific_challenges: e.target.value})}
                     rows={3}
                   />
-                  <p className="form-hint">Describe physical limitations of schools in this cluster</p>
+                  <p className="form-hint">Describe specific challenges of schools in this cluster</p>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Key Issues</label>
+                  <label className="form-label">Additional Notes</label>
                   <textarea
                     className="form-control"
                     placeholder="e.g., High absenteeism, Language barriers, Multi-grade teaching"
-                    value={formData.key_issues}
-                    onChange={(e) => setFormData({...formData, key_issues: e.target.value})}
+                    value={formData.additional_notes}
+                    onChange={(e) => setFormData({...formData, additional_notes: e.target.value})}
                     rows={3}
                   />
-                  <p className="form-hint">Common challenges faced by teachers in this cluster</p>
+                  <p className="form-hint">Any other relevant information about this cluster</p>
                 </div>
               </div>
 

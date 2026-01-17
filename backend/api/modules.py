@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import Dict, List
 from core.database import get_db
 from models.database_models import Module, Manual, Cluster, ExportedPDF
 from schemas.api_schemas import ModuleResponse, GenerateModuleRequest, FeedbackCreate, FeedbackResponse
 from services.rag_engine import RAGEngine
 from services.ai_engine import AIAdaptationEngine
 import logging
+import json
+from datetime import datetime, timedelta
 
 # PDF Exporting requirements
 from services.pdf_export_service import PDFExportService
@@ -19,6 +21,9 @@ router = APIRouter(prefix="/api/modules", tags=["Modules"])
 
 rag_engine = RAGEngine()
 ai_engine = AIAdaptationEngine()
+
+# Keep prompts small enough to avoid Groq TPM/token-limit errors
+MAX_SOURCE_CHARS_FOR_AI = 2800
 
 @router.post("/generate", response_model=ModuleResponse, status_code=status.HTTP_201_CREATED)
 async def generate_module(
@@ -64,33 +69,74 @@ async def generate_module(
                 detail=f"No relevant content found for topic '{request.topic}' in manual"
             )
         
-        # Step 2: Build cluster profile dict
+        # Step 2: Build cluster profile dict (backward-compatible keys for the prompt)
+        infrastructure_constraints = cluster.infrastructure_level
+        if cluster.additional_notes:
+            infrastructure_constraints = f"{infrastructure_constraints} | Notes: {cluster.additional_notes}"
+
         cluster_profile = {
             "name": cluster.name,
-            "region_type": cluster.region_type,
-            "language": cluster.language,
-            "infrastructure_constraints": cluster.infrastructure_constraints or "None specified",
-            "key_issues": cluster.key_issues or "None specified",
-            "grade_range": cluster.grade_range or "Not specified"
+            "region_type": cluster.geographic_type,
+            "language": cluster.primary_language,
+            "infrastructure_constraints": infrastructure_constraints or "Not specified",
+            "key_issues": cluster.specific_challenges or "None specified",
+            "grade_range": "Not specified",
         }
-        
-        # Step 3: Generate adapted content using AI
-        logger.info(f"Generating adapted content for cluster: {cluster.name}")
-        adaptation_result = await ai_engine.adapt_content(
-            source_content=original_content,
-            cluster_profile=cluster_profile,
-            topic=request.topic
+
+        target_language = (
+            (request.target_language or "").strip().lower()
+            or (cluster.primary_language or "").strip().lower()
+            or "english"
         )
         
+        # Step 3: Generate adapted content using AI (truncate context to control token usage)
+        source_for_ai = original_content
+        if source_for_ai and len(source_for_ai) > MAX_SOURCE_CHARS_FOR_AI:
+            source_for_ai = source_for_ai[:MAX_SOURCE_CHARS_FOR_AI] + "\n\n[Excerpt truncated for token limits]"
+
+        logger.info(f"Generating adapted content for cluster: {cluster.name}")
+        try:
+            adaptation_result = await ai_engine.adapt_content(
+                source_content=source_for_ai,
+                cluster_profile=cluster_profile,
+                topic=request.topic,
+                target_language=target_language,
+            )
+        except Exception as e:
+            # If Groq rejects due to token limits, retry once with a smaller excerpt.
+            msg = str(e)
+            if "Request too large" in msg or "tokens per minute" in msg or "rate_limit_exceeded" in msg:
+                smaller = (original_content or "")[:1200] + "\n\n[Excerpt truncated further due to token limits]"
+                adaptation_result = await ai_engine.adapt_content(
+                    source_content=smaller,
+                    cluster_profile=cluster_profile,
+                    topic=request.topic,
+                    target_language=target_language,
+                )
+            else:
+                raise
+        
         # Step 4: Create module record
+        module_metadata = {
+            "approved": False,
+            "cluster_profile": cluster_profile,
+            "ai": {
+                "model": adaptation_result.get("model"),
+                "tokens_used": adaptation_result.get("tokens_used"),
+                "finish_reason": adaptation_result.get("finish_reason"),
+                "was_translated": adaptation_result.get("was_translated"),
+            },
+        }
+
         module = Module(
             title=request.topic,
             manual_id=request.manual_id,
             cluster_id=request.cluster_id,
             original_content=original_content[:5000],  # Store first 5000 chars
             adapted_content=adaptation_result['adapted_content'],
-            language=cluster.language,
-            approved=False
+            target_language=adaptation_result.get("output_language") or target_language,
+            section_title=request.topic,
+            module_metadata=json.dumps(module_metadata),
         )
         
         db.add(module)
@@ -99,13 +145,22 @@ async def generate_module(
         
         logger.info(f"Module generated successfully with ID: {module.id}")
         return module
-        
+
+    except HTTPException:
+        raise
+
     except Exception as e:
-        logger.error(f"Error generating module: {str(e)}")
+        logger.exception("Error generating module")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error generating module: {str(e)}"
         )
+
+
+@router.get("/languages", response_model=Dict[str, str])
+async def get_supported_languages():
+    """Return supported output languages for module generation."""
+    return ai_engine.get_supported_languages()
 
 @router.get("/", response_model=List[ModuleResponse])
 async def list_modules(
@@ -152,7 +207,7 @@ async def approve_module(
             detail=f"Module with ID {module_id} not found"
         )
 
-    # Step 2: Mark approved
+    # Step 2: Mark approved (stored in module_metadata)
     module.approved = True
     db.commit()
     db.refresh(module)
@@ -169,7 +224,7 @@ async def approve_module(
         module_id=module.id,
         filename=pdf_result["filename"],
         file_path=pdf_result["file_path"],
-        language=module.language,
+        expires_at=datetime.utcnow() + timedelta(days=7),
     )
     db.add(pdf_record)
 
