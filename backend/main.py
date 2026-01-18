@@ -48,6 +48,9 @@ logger = logging.getLogger(__name__)
 # Import database and routes
 from core.database import init_db
 from api import clusters_router, manuals_router, modules_router, translation_router
+from api.auth import router as auth_router
+from api.admin import router as admin_router
+from api.schools import router as schools_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -116,6 +119,9 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
+app.include_router(schools_router, prefix="/api")
 app.include_router(clusters_router)
 app.include_router(manuals_router)
 app.include_router(modules_router)

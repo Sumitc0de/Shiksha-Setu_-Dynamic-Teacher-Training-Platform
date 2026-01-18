@@ -48,7 +48,6 @@ async def upload_manual(
             title=title,
             filename=file.filename,
             file_path=file_path,
-            language=normalized_language,
             total_pages=page_count,
             indexed=False,
         )

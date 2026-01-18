@@ -31,10 +31,28 @@ const apiClient = axios.create({
   timeout: 60000, // 60 seconds for AI generation
 });
 
+// Request interceptor to add auth token
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
     const message = error.response?.data?.detail || 
                     error.message || 
                     'An unexpected error occurred';
@@ -46,6 +64,50 @@ apiClient.interceptors.response.use(
 // ================== HEALTH ==================
 export const checkHealth = () => apiClient.get('/health');
 
+// ================== AUTHENTICATION ==================
+export const auth = {
+  login: (credentials) => apiClient.post('/api/auth/login', credentials),
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    return apiClient.post('/api/auth/logout');
+  },
+  getCurrentUser: () => apiClient.get('/api/auth/me'),
+  getDashboardStats: () => apiClient.get('/api/auth/dashboard/stats'),
+};
+
+// ================== ADMIN (Government Officials) ==================
+export const admin = {
+  getOverview: () => apiClient.get('/api/admin/overview'),
+  listSchools: (skip = 0, limit = 50) => apiClient.get(`/api/admin/schools?skip=${skip}&limit=${limit}`),
+  listTeachers: (skip = 0, limit = 50, schoolId = null) => {
+    const url = schoolId 
+      ? `/api/admin/teachers?skip=${skip}&limit=${limit}&school_id=${schoolId}`
+      : `/api/admin/teachers?skip=${skip}&limit=${limit}`;
+    return apiClient.get(url);
+  },
+  getSchoolDetails: (schoolId) => apiClient.get(`/api/admin/schools/${schoolId}`),
+};
+
+// ================== SCHOOLS (Principals/Administrators) ==================
+export const schools = {
+  getDashboard: () => apiClient.get('/api/schools/dashboard'),
+  listTeachers: (skip = 0, limit = 50) => apiClient.get(`/api/schools/teachers?skip=${skip}&limit=${limit}`),
+  getTeacherDetails: (teacherId) => apiClient.get(`/api/schools/teachers/${teacherId}`),
+  listClusters: (skip = 0, limit = 50, teacherId = null) => {
+    const url = teacherId
+      ? `/api/schools/clusters?skip=${skip}&limit=${limit}&teacher_id=${teacherId}`
+      : `/api/schools/clusters?skip=${skip}&limit=${limit}`;
+    return apiClient.get(url);
+  },
+  listModules: (skip = 0, limit = 50, teacherId = null, approved = null) => {
+    let url = `/api/schools/modules?skip=${skip}&limit=${limit}`;
+    if (teacherId) url += `&teacher_id=${teacherId}`;
+    if (approved !== null) url += `&approved=${approved}`;
+    return apiClient.get(url);
+  },
+};
+
 // ================== CLUSTERS ==================
 export const getClusters = () => apiClient.get('/api/clusters/');
 
@@ -54,12 +116,11 @@ export const getCluster = (id) => apiClient.get(`/api/clusters/${id}`);
 export const createCluster = (clusterData) => {
   const payload = {
     name: clusterData.name,
-    geographic_type: clusterData.geographic_type,
-    primary_language: clusterData.primary_language,
-    infrastructure_level: clusterData.infrastructure_level,
-    total_teachers: clusterData.total_teachers,
-    specific_challenges: clusterData.specific_challenges || null,
-    additional_notes: clusterData.additional_notes || null,
+    region_type: clusterData.geographic_type || clusterData.region_type,
+    language: clusterData.primary_language || clusterData.language,
+    infrastructure_constraints: clusterData.infrastructure_level || clusterData.infrastructure_constraints || null,
+    key_issues: clusterData.specific_challenges || clusterData.key_issues || null,
+    grade_range: clusterData.additional_notes || clusterData.grade_range || null,
   };
   return apiClient.post('/api/clusters/', payload);
 };
@@ -67,12 +128,11 @@ export const createCluster = (clusterData) => {
 export const updateCluster = (id, clusterData) => {
   const payload = {
     name: clusterData.name,
-    geographic_type: clusterData.geographic_type,
-    primary_language: clusterData.primary_language,
-    infrastructure_level: clusterData.infrastructure_level,
-    total_teachers: clusterData.total_teachers,
-    specific_challenges: clusterData.specific_challenges || null,
-    additional_notes: clusterData.additional_notes || null,
+    region_type: clusterData.geographic_type || clusterData.region_type,
+    language: clusterData.primary_language || clusterData.language,
+    infrastructure_constraints: clusterData.infrastructure_level || clusterData.infrastructure_constraints || null,
+    key_issues: clusterData.specific_challenges || clusterData.key_issues || null,
+    grade_range: clusterData.additional_notes || clusterData.grade_range || null,
   };
   return apiClient.put(`/api/clusters/${id}`, payload);
 };
@@ -172,6 +232,9 @@ export const getDashboardStats = async () => {
 // Default export for backward compatibility
 const api = {
   checkHealth,
+  auth,
+  admin,
+  schools,
   getClusters,
   getCluster,
   createCluster,

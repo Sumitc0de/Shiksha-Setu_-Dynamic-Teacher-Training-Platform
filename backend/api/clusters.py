@@ -4,10 +4,8 @@ from typing import List
 from core.database import get_db
 from models.database_models import Cluster
 from schemas.api_schemas import ClusterCreate, ClusterUpdate, ClusterResponse
-from api.teachers import router as teachers_router
 
 router = APIRouter(prefix="/api/clusters", tags=["Clusters"])
-router.include_router(teachers_router)
 
 @router.post("/", response_model=ClusterResponse, status_code=status.HTTP_201_CREATED)
 async def create_cluster(cluster: ClusterCreate, db: Session = Depends(get_db)):

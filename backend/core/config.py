@@ -10,7 +10,10 @@ class Settings(BaseSettings):
     indictrans2_model_dir: str = "./models/indictrans2"
     huggingface_token: Optional[str] = None
     database_url: str = "sqlite:///./shiksha_setu.db"
-    chroma_persist_directory: str = "./chroma_db"
+    # Use an absolute path inside the backend package so Chroma uses the
+    # provided `backend/chroma_db/chroma.sqlite3` file reliably regardless
+    # of the current working directory when the app is started.
+    chroma_persist_directory: str = str(BACKEND_DIR / "chroma_db")
     environment: str = "development"
     debug: bool = True
     

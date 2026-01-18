@@ -17,8 +17,10 @@ import {
   Menu,
   X,
   ChevronRight,
+  LogOut,
 } from 'lucide-react';
 import { checkHealth } from '../../services/api';
+import * as api from '../../services/api';
 
 const navigation = [
   { path: '/', label: 'Cover', icon: BookOpen, pageNum: null, accent: 'setu' },
@@ -53,6 +55,11 @@ export default function BookLayout({ children }) {
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  const handleLogout = () => {
+    api.auth.logout();
+    window.location.href = '/login';
+  };
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: 'var(--paper-100)' }}>
@@ -187,8 +194,20 @@ export default function BookLayout({ children }) {
             ))}
           </nav>
 
-          {/* API Status with animation */}
-          <div className="p-4" style={{ borderTop: '1px solid var(--paper-200)' }}>
+          {/* Footer section */}
+          <div className="p-4 space-y-3" style={{ borderTop: '1px solid var(--paper-200)' }}>
+            {/* Logout Button */}
+            <motion.button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-red-50 group"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <LogOut className="w-4 h-4 text-red-600" />
+              <span className="text-sm font-medium text-red-600">Logout</span>
+            </motion.button>
+
+            {/* API Status with animation */}
             <motion.div 
               className="flex items-center gap-2 px-3 py-2 rounded-lg"
               style={{ background: 'var(--paper-100)' }}

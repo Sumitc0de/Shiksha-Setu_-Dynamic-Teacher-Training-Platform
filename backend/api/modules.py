@@ -70,18 +70,14 @@ async def generate_module(
                 detail=f"No relevant content found for topic '{request.topic}' in manual"
             )
         
-        # Step 2: Build cluster profile dict (backward-compatible keys for the prompt)
-        infrastructure_constraints = cluster.infrastructure_level
-        if cluster.additional_notes:
-            infrastructure_constraints = f"{infrastructure_constraints} | Notes: {cluster.additional_notes}"
-
+        # Step 2: Build cluster profile dict using correct field names
         cluster_profile = {
             "name": cluster.name,
-            "region_type": cluster.geographic_type,
-            "language": cluster.primary_language,
-            "infrastructure_constraints": infrastructure_constraints or "Not specified",
-            "key_issues": cluster.specific_challenges or "None specified",
-            "grade_range": "Not specified",
+            "region_type": cluster.region_type,
+            "language": cluster.language,
+            "infrastructure_constraints": cluster.infrastructure_constraints or "Not specified",
+            "key_issues": cluster.key_issues or "None specified",
+            "grade_range": cluster.grade_range or "Not specified",
         }
 
         target_language = (
@@ -117,27 +113,15 @@ async def generate_module(
             else:
                 raise
         
-        # Step 4: Create module record
-        module_metadata = {
-            "approved": False,
-            "cluster_profile": cluster_profile,
-            "ai": {
-                "model": adaptation_result.get("model"),
-                "tokens_used": adaptation_result.get("tokens_used"),
-                "finish_reason": adaptation_result.get("finish_reason"),
-                "was_translated": adaptation_result.get("was_translated"),
-            },
-        }
-
+        # Step 4: Create module record with valid fields only
         module = Module(
             title=request.topic,
             manual_id=request.manual_id,
             cluster_id=request.cluster_id,
             original_content=original_content[:5000],  # Store first 5000 chars
             adapted_content=adaptation_result['adapted_content'],
-            target_language=adaptation_result.get("output_language") or target_language,
-            section_title=request.topic,
-            module_metadata=json.dumps(module_metadata),
+            language=adaptation_result.get("output_language") or target_language,
+            approved=False,
         )
         
         db.add(module)
