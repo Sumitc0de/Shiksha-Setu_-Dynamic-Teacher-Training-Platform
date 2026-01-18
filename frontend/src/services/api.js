@@ -20,7 +20,7 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'https://shiksha-setu-dynamic-teacher-training-3jwm.onrender.com' || 'http://localhost:8000';
 
 // Create axios instance with default config
 const apiClient = axios.create({

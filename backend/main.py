@@ -76,6 +76,7 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
         "http://127.0.0.1:5173",
+        "https://shiksha-setu-dynamic-teacher-training-3jwm.onrender.com",  # Assuming frontend is hosted here
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -132,5 +133,6 @@ async def favicon():
 
 if __name__ == "__main__":
     import uvicorn
-    # Use 127.0.0.1 for local access, or 0.0.0.0 for network access
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
