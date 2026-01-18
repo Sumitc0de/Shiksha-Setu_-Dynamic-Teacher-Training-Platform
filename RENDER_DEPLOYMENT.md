@@ -18,6 +18,12 @@ CORS_ORIGINS=https://your-frontend-url.onrender.com
 ```
 
 ### Start Command
+**IMPORTANT**: Use this exact command in your Render dashboard:
+```bash
+bash render_start.sh
+```
+
+Or alternatively:
 ```bash
 cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
 ```
@@ -35,10 +41,10 @@ cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
    - **Name**: `shiksha-setu-backend`
    - **Region**: Choose closest to your users
    - **Branch**: `main`
-   - **Root Directory**: Leave empty (or `backend` if needed)
+   - **Root Directory**: Leave empty (do NOT set to backend)
    - **Runtime**: `Python 3`
    - **Build Command**: `./build.sh`
-   - **Start Command**: `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - **Start Command**: `bash render_start.sh`
 
 3. **Add Environment Variables**
    - Click "Advanced" → "Add Environment Variable"
@@ -148,7 +154,30 @@ If data disappears between deploys:
 
 - `build.sh` - Build script for Render
 - `init_db_render.py` - Database initialization script
+- `render_start.sh` - Startup script for Render
 - `RENDER_DEPLOYMENT.md` - This file
+
+## Common Deployment Issues
+
+### ModuleNotFoundError: No module named 'models'
+
+**Symptoms**: Backend fails to start with import errors for `models`, `core`, or `services`
+
+**Solution**:
+1. Make sure the Start Command is: `bash render_start.sh`
+2. Do NOT set "Root Directory" to `backend` in Render settings
+3. The start script will automatically `cd` to the backend directory
+
+**Why this happens**: The uvicorn command needs to be run from inside the backend directory so Python can find the modules correctly.
+
+### Database Table Not Found
+
+**Symptoms**: Errors like "no such table: clusters" or "no such table: users"
+
+**Solution**:
+1. Make sure `build.sh` is running successfully (check build logs)
+2. The `init_db_render.py` script should create all tables during build
+3. Check that `DATABASE_URL` environment variable is set correctly
 
 ## Support
 
