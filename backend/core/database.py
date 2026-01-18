@@ -22,5 +22,8 @@ def get_db():
 
 def init_db():
     # Import all models to ensure they're registered with Base
-    from models.database_models import Cluster, Manual, Module, ExportedPDF
+    from models.database_models import (
+        User, UserRole, School, Cluster, Manual, Module, 
+        ExportedPDF, Feedback
+    )
     Base.metadata.create_all(bind=engine)

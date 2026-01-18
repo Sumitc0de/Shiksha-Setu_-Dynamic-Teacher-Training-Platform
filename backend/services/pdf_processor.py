@@ -10,6 +10,13 @@ try:
     import pytesseract
     from pdf2image import convert_from_path
     from PIL import Image
+    
+    # Configure Tesseract path for Windows
+    if os.name == 'nt':  # Windows
+        tesseract_path = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        if os.path.exists(tesseract_path):
+            pytesseract.pytesseract.tesseract_cmd = tesseract_path
+    
     OCR_AVAILABLE = True
 except ImportError:
     OCR_AVAILABLE = False
