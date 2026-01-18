@@ -23,10 +23,12 @@ import {
   Sun,
   TreePine,
   Landmark,
+  Pin,
+  PinOff,
 } from 'lucide-react';
 import { PageTransition, FadeIn, listContainerVariants, listItemVariants } from '../ui/PageTransition';
 import { PageHeader, Modal, Alert, EmptyState, ConfirmDialog, Badge, LoadingSpinner } from '../ui/SharedComponents';
-import { getClusters, createCluster, updateCluster, deleteCluster } from '../../services/api';
+import { getClusters, createCluster, updateCluster, deleteCluster, toggleClusterPin } from '../../services/api';
 
 // Configuration data
 const REGION_TYPES = [
@@ -160,6 +162,20 @@ export default function ClustersPage() {
     }
   };
 
+  const handleTogglePin = async (cluster, e) => {
+    e.stopPropagation();
+    try {
+      await toggleClusterPin(cluster.id);
+      setAlert({ 
+        type: 'success', 
+        message: cluster.pinned ? 'Cluster unpinned' : 'Cluster pinned for quick access' 
+      });
+      loadClusters();
+    } catch (error) {
+      setAlert({ type: 'error', message: error.message || 'Failed to update pin status' });
+    }
+  };
+
   const getRegionIcon = (type) => {
     const IconComponent = REGION_ICONS[type] || MapPin;
     return IconComponent;
@@ -256,6 +272,14 @@ export default function ClustersPage() {
                       </div>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
+                          onClick={(e) => handleTogglePin(cluster, e)}
+                          className={`btn btn-ghost btn-icon p-2 ${cluster.pinned ? 'opacity-100' : ''}`}
+                          style={{ color: cluster.pinned ? 'var(--setu-600)' : 'inherit' }}
+                          title={cluster.pinned ? 'Unpin cluster' : 'Pin cluster'}
+                        >
+                          {cluster.pinned ? <Pin className="w-4 h-4 fill-current" /> : <PinOff className="w-4 h-4" />}
+                        </button>
+                        <button
                           onClick={() => openEditModal(cluster)}
                           className="btn btn-ghost btn-icon p-2"
                           title="Edit"
@@ -274,8 +298,11 @@ export default function ClustersPage() {
                     </div>
 
                     {/* Title */}
-                    <h3 className="text-lg font-medium mb-3" style={{ color: 'var(--ink-800)' }}>
+                    <h3 className="text-lg font-medium mb-3 flex items-center gap-2" style={{ color: 'var(--ink-800)' }}>
                       {cluster.name}
+                      {cluster.pinned && (
+                        <Pin className="w-4 h-4 fill-current" style={{ color: 'var(--setu-600)' }} />
+                      )}
                     </h3>
 
                     {/* Badges */}

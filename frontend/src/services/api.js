@@ -139,6 +139,8 @@ export const updateCluster = (id, clusterData) => {
 
 export const deleteCluster = (id) => apiClient.delete(`/api/clusters/${id}`);
 
+export const toggleClusterPin = (id) => apiClient.patch(`/api/clusters/${id}/pin`);
+
 // ================== MANUALS ==================
 export const getManuals = () => apiClient.get('/api/manuals/');
 
@@ -162,6 +164,8 @@ export const uploadManual = async (title, file) => {
 export const indexManual = (id) => apiClient.post(`/api/manuals/${id}/index`);
 
 export const deleteManual = (id) => apiClient.delete(`/api/manuals/${id}`);
+
+export const toggleManualPin = (id) => apiClient.patch(`/api/manuals/${id}/pin`);
 
 // ================== MODULES ==================
 export const getModules = (filters = {}) => {
@@ -240,11 +244,13 @@ const api = {
   createCluster,
   updateCluster,
   deleteCluster,
+  toggleClusterPin,
   getManuals,
   getManual,
   uploadManual,
   indexManual,
   deleteManual,
+  toggleManualPin,
   getModules,
   getModule,
   generateModule,

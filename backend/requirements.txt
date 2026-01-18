@@ -36,6 +36,11 @@ beautifulsoup4==4.14.3               # Required by deep-translator
 PyPDF2==3.0.1
 pdfplumber==0.11.9
 
+# OCR Support for Scanned PDFs/Images
+pytesseract==0.3.10                  # Python wrapper for Tesseract OCR
+Pillow==11.0.0                       # Image processing
+pdf2image==1.17.0                    # Convert PDF pages to images for OCR
+
 # PDF Export
 reportlab==4.4.9
 

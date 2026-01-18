@@ -70,6 +70,9 @@ async def generate_module(
                 detail=f"No relevant content found for topic '{request.topic}' in manual"
             )
         
+        logger.info(f"Retrieved {len(original_content)} characters of source content")
+        logger.info(f"Source content preview: {original_content[:200]}...")
+        
         # Step 2: Build cluster profile dict using correct field names
         cluster_profile = {
             "name": cluster.name,
@@ -82,7 +85,7 @@ async def generate_module(
 
         target_language = (
             (request.target_language or "").strip().lower()
-            or (cluster.primary_language or "").strip().lower()
+            or cluster.language.strip().lower()
             or "english"
         )
         

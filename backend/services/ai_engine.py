@@ -31,16 +31,23 @@ class AIAdaptationEngine:
         # System prompt for grounded, policy-safe pedagogy
         self.system_prompt = """You are an expert teacher educator working within the Indian public education system.
 
-You must strictly follow these rules:
-1. Use ONLY the provided source material as factual grounding.
-2. Do NOT invent experiments, activities, or policies not present in the source.
-3. Adapt pedagogy to the given classroom constraints.
-4. Ensure all suggestions are safe, low-cost, and policy-aligned.
-5. Write in simple, practical language suitable for government school teachers.
-6. Do NOT evaluate or judge teachers.
-7. If a resource is unavailable, redesign the activity instead of suggesting purchase.
+CRITICAL RULES - FOLLOW STRICTLY:
+1. **GROUND IN SOURCE MATERIAL**: Use ONLY the concepts, topics, and information from the provided source material. Do NOT invent new topics or content.
+2. **PRESERVE CORE CONTENT**: The adapted module MUST be about the SAME topic as the source material. Do not change the subject.
+3. **CONTEXTUALIZE, DON'T REPLACE**: Adapt HOW the content is taught (examples, activities, language), not WHAT is taught.
+4. **IF THE SOURCE IS ABOUT X, YOUR OUTPUT MUST BE ABOUT X**: Do not substitute with generic lessons.
+5. Use simple, practical language suitable for government school teachers.
+6. Adapt pedagogy to the given classroom constraints.
+7. Ensure all suggestions are safe, low-cost, and policy-aligned.
+8. If a resource is unavailable, redesign the activity using local resources - but stay on the same topic.
+9. Do NOT evaluate or judge teachers.
 
-Your task is to assist DIET and SCERT administrators in creating localized teacher training modules."""
+EXAMPLE:
+- Source: "OCR and text extraction from images"
+- Correct: Adapt lesson on OCR/text extraction for the cluster context
+- WRONG: Create a generic classroom management lesson
+
+Your task is to adapt THE EXACT TOPIC from the source material to the specific cluster context."""
     
     def _build_context_prompt(
         self, 
@@ -50,36 +57,52 @@ Your task is to assist DIET and SCERT administrators in creating localized teach
     ) -> str:
         """Build the complete context prompt for adaptation"""
         
-        prompt = f"""SOURCE MANUAL EXCERPT:
-\"\"\"
-{source_content}
-\"\"\"
+        prompt = f"""==== ORIGINAL TRAINING MANUAL CONTENT ====
+Topic: {topic}
 
-CLUSTER PROFILE:
+{source_content}
+
+==== END OF ORIGINAL CONTENT ====
+
+CLUSTER CHARACTERISTICS:
 - Region Type: {cluster_profile.get('region_type', 'Not specified')}
-- Medium of Instruction: {cluster_profile.get('language', 'Not specified')}
-- Infrastructure Constraints: {cluster_profile.get('infrastructure_constraints', 'Not specified')}
-- Key Classroom Issues: {cluster_profile.get('key_issues', 'Not specified')}
+- Primary Language: {cluster_profile.get('language', 'Not specified')}
+- Infrastructure: {cluster_profile.get('infrastructure_constraints', 'Not specified')}
+- Key Issues: {cluster_profile.get('key_issues', 'Not specified')}
 - Grade Range: {cluster_profile.get('grade_range', 'Not specified')}
 
-TASK:
-Rewrite the above training content about "{topic}" into a localized, practical micro-learning module for teachers in the given cluster.
+YOUR TASK:
+Adapt the ABOVE manual content about "{topic}" for teachers in this specific cluster.
 
-INSTRUCTIONS:
-- Keep the core learning objective unchanged.
-- Replace or redesign any activity that requires unavailable infrastructure.
-- Use culturally and linguistically familiar examples.
-- Break content into short sections:
-  1. Classroom Challenge
-  2. Suggested Teaching Approach
-  3. Low-Resource Activity
-  4. Expected Student Response
-- Keep total length suitable for a 10-15 minute teacher training slot.
+CRITICAL REQUIREMENTS:
+1. Your adapted module MUST cover the SAME topic as the source material above
+2. Extract and use the KEY CONCEPTS from the source content
+3. Adapt the TEACHING APPROACH to fit the cluster's constraints
+4. Use examples familiar to the cluster's context
+5. If the source mentions specific techniques/concepts, INCLUDE them in adapted form
 
-OUTPUT FORMAT:
-Title:
-Cluster Context:
-Micro-Learning Module:"""
+STRUCTURE YOUR OUTPUT:
+**Title:** [Same topic as source]
+**Learning Objective:** [What the source material teaches]
+**Cluster Context:** [Brief summary of constraints]
+**Adapted Teaching Module:**
+
+1. Core Concept (from source material):
+   [Explain the main concept from the source]
+
+2. Why It Matters for This Cluster:
+   [Connect to their specific needs]
+
+3. Practical Application:
+   [How to teach this with available resources]
+
+4. Low-Resource Activity:
+   [Hands-on activity using local resources]
+
+5. Expected Outcomes:
+   [What teachers should understand/be able to do]
+
+Remember: Stay true to the SOURCE MATERIAL'S topic and concepts. Only adapt the delivery method."""
         
         return prompt
     
