@@ -11,6 +11,7 @@ import BookLayout from './components/layout/BookLayout';
 import { LoadingSpinner } from './components/ui/SharedComponents';
 
 // Lazy load pages for performance
+const LandingPage = lazy(() => import('./components/pages/LandingPage'));
 const LoginPage = lazy(() => import('./components/pages/LoginPage'));
 const AdminDashboard = lazy(() => import('./components/pages/AdminDashboard'));
 const PrincipalDashboard = lazy(() => import('./components/pages/PrincipalDashboard'));
@@ -34,17 +35,17 @@ function PageLoader() {
 }
 
 // Animated routes wrapper
-function AnimatedRoutes({ user, onLogout }) {
+function AnimatedRoutes({ user, onLogout, onLoginSuccess }) {
   const location = useLocation();
 
   // Protected route component
   const ProtectedRoute = ({ children, allowedRoles }) => {
     if (!user) {
-      return <Navigate to="/login" replace />;
+      return <Navigate to="/landing" replace />;
     }
     
     if (allowedRoles && !allowedRoles.includes(user.role)) {
-      return <Navigate to="/" replace />;
+      return <Navigate to="/dashboard" replace />;
     }
     
     return children;
@@ -52,17 +53,17 @@ function AnimatedRoutes({ user, onLogout }) {
 
   // Redirect to appropriate dashboard based on role
   const DashboardRedirect = () => {
-    if (!user) return <Navigate to="/login" replace />;
+    if (!user) return <Navigate to="/landing" replace />;
     
     switch (user.role) {
-      case 'ADMIN':
+      case 'admin':
         return <Navigate to="/admin" replace />;
-      case 'PRINCIPAL':
+      case 'principal':
         return <Navigate to="/principal" replace />;
-      case 'TEACHER':
+      case 'teacher':
         return <CoverPage />;
       default:
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/landing" replace />;
     }
   };
 
@@ -70,13 +71,31 @@ function AnimatedRoutes({ user, onLogout }) {
     <AnimatePresence mode="wait">
       <Suspense fallback={<PageLoader />}>
         <Routes location={location} key={location.pathname}>
-          <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage onLoginSuccess={() => window.location.reload()} />} />
+          {/* Landing page - shown to non-authenticated users */}
+          <Route 
+            path="/" 
+            element={
+              user ? <DashboardRedirect /> : <LandingPage />
+            } 
+          />
+          <Route 
+            path="/landing" 
+            element={
+              user ? <DashboardRedirect /> : <LandingPage />
+            } 
+          />
+          <Route 
+            path="/login" 
+            element={
+              user ? <DashboardRedirect /> : <LoginPage onLoginSuccess={onLoginSuccess} />
+            } 
+          />
           
           {/* Role-specific dashboards */}
           <Route 
             path="/admin" 
             element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
+              <ProtectedRoute allowedRoles={['admin']}>
                 <AdminDashboard user={user} onLogout={onLogout} />
               </ProtectedRoute>
             } 
@@ -84,7 +103,7 @@ function AnimatedRoutes({ user, onLogout }) {
           <Route 
             path="/principal" 
             element={
-              <ProtectedRoute allowedRoles={['PRINCIPAL']}>
+              <ProtectedRoute allowedRoles={['principal']}>
                 <PrincipalDashboard user={user} onLogout={onLogout} />
               </ProtectedRoute>
             } 
@@ -92,7 +111,7 @@ function AnimatedRoutes({ user, onLogout }) {
           
           {/* Teacher routes (default app flow) */}
           <Route 
-            path="/" 
+            path="/dashboard" 
             element={
               <ProtectedRoute>
                 <DashboardRedirect />
@@ -102,7 +121,7 @@ function AnimatedRoutes({ user, onLogout }) {
           <Route 
             path="/clusters" 
             element={
-              <ProtectedRoute allowedRoles={['TEACHER']}>
+              <ProtectedRoute allowedRoles={['teacher']}>
                 <ClustersPage />
               </ProtectedRoute>
             } 
@@ -110,7 +129,7 @@ function AnimatedRoutes({ user, onLogout }) {
           <Route 
             path="/manuals" 
             element={
-              <ProtectedRoute allowedRoles={['TEACHER']}>
+              <ProtectedRoute allowedRoles={['teacher']}>
                 <ManualsPage />
               </ProtectedRoute>
             } 
@@ -118,7 +137,7 @@ function AnimatedRoutes({ user, onLogout }) {
           <Route 
             path="/generate" 
             element={
-              <ProtectedRoute allowedRoles={['TEACHER']}>
+              <ProtectedRoute allowedRoles={['teacher']}>
                 <GeneratorPage />
               </ProtectedRoute>
             } 
@@ -126,7 +145,7 @@ function AnimatedRoutes({ user, onLogout }) {
           <Route 
             path="/library" 
             element={
-              <ProtectedRoute allowedRoles={['TEACHER']}>
+              <ProtectedRoute allowedRoles={['teacher']}>
                 <LibraryPage />
               </ProtectedRoute>
             } 
@@ -134,7 +153,7 @@ function AnimatedRoutes({ user, onLogout }) {
           <Route 
             path="/translate" 
             element={
-              <ProtectedRoute allowedRoles={['TEACHER']}>
+              <ProtectedRoute allowedRoles={['teacher']}>
                 <TranslationPage />
               </ProtectedRoute>
             } 
@@ -166,11 +185,15 @@ function App() {
     setLoading(false);
   }, []);
 
+  const handleLoginSuccess = (response) => {
+    setUser(response.user);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     setUser(null);
-    window.location.href = '/login';
+    window.location.href = '/landing';
   };
 
   if (loading) {
@@ -180,12 +203,12 @@ function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
-        {user && user.role === 'TEACHER' ? (
+        {user && user.role === 'teacher' ? (
           <BookLayout>
-            <AnimatedRoutes user={user} onLogout={handleLogout} />
+            <AnimatedRoutes user={user} onLogout={handleLogout} onLoginSuccess={handleLoginSuccess} />
           </BookLayout>
         ) : (
-          <AnimatedRoutes user={user} onLogout={handleLogout} />
+          <AnimatedRoutes user={user} onLogout={handleLogout} onLoginSuccess={handleLoginSuccess} />
         )}
       </BrowserRouter>
     </ThemeProvider>

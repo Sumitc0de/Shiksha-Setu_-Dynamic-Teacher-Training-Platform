@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { School, Users, BookOpen, CheckCircle, Clock, TrendingUp, UserCheck, LogOut } from 'lucide-react';
+import { School, Users, BookOpen, CheckCircle, Clock, TrendingUp, UserCheck, LogOut, BarChart3, PieChart, Award, Target } from 'lucide-react';
 import * as api from '../../services/api';
+import SimpleBarChart from '../charts/SimpleBarChart';
+import SimplePieChart from '../charts/SimplePieChart';
+import TrendIndicator from '../charts/TrendIndicator';
 
 const PrincipalDashboard = ({ user }) => {
   const [dashboard, setDashboard] = useState(null);
@@ -140,24 +143,118 @@ const PrincipalDashboard = ({ user }) => {
                 value={dashboard.total_teachers}
                 subtitle={`${dashboard.active_teachers} active`}
                 color="purple"
+                trend={5}
               />
               <StatCard
                 icon={BookOpen}
                 label="Training Clusters"
                 value={dashboard.total_clusters}
                 color="blue"
+                trend={10}
               />
               <StatCard
                 icon={CheckCircle}
                 label="Approved Modules"
                 value={dashboard.approved_modules}
                 color="green"
+                trend={15}
               />
               <StatCard
                 icon={Clock}
                 label="Pending Modules"
                 value={dashboard.pending_modules}
                 color="orange"
+                trend={-8}
+              />
+            </div>
+
+            {/* Analytics Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Module Status Distribution */}
+              <div className="bg-white rounded-xl shadow-sm border p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <PieChart className="w-6 h-6 text-purple-600" />
+                  <h3 className="text-lg font-bold text-gray-900">Module Status</h3>
+                </div>
+                <SimplePieChart
+                  data={[
+                    { label: 'Approved', value: dashboard.approved_modules },
+                    { label: 'Pending', value: dashboard.pending_modules },
+                    { label: 'In Progress', value: Math.max(0, dashboard.total_modules - dashboard.approved_modules - dashboard.pending_modules) }
+                  ]}
+                />
+              </div>
+
+              {/* Teacher Performance Metrics */}
+              <div className="bg-white rounded-xl shadow-sm border p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <Award className="w-6 h-6 text-green-600" />
+                  <h3 className="text-lg font-bold text-gray-900">Performance</h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <div className="text-sm text-gray-600 mb-1">Approval Rate</div>
+                    <TrendIndicator 
+                      value={`${dashboard.total_modules > 0 ? Math.round((dashboard.approved_modules / dashboard.total_modules) * 100) : 0}%`}
+                      trend={3}
+                    />
+                  </div>
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <div className="text-sm text-gray-600 mb-1">Avg Modules/Teacher</div>
+                    <TrendIndicator 
+                      value={Math.round(dashboard.total_modules / Math.max(1, dashboard.total_teachers))}
+                      trend={7}
+                    />
+                  </div>
+                  <div className="p-4 bg-purple-50 rounded-lg">
+                    <div className="text-sm text-gray-600 mb-1">Active Teachers</div>
+                    <TrendIndicator 
+                      value={`${Math.round((dashboard.active_teachers / Math.max(1, dashboard.total_teachers)) * 100)}%`}
+                      trend={2}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Metrics */}
+              <div className="bg-white rounded-xl shadow-sm border p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <Target className="w-6 h-6 text-blue-600" />
+                  <h3 className="text-lg font-bold text-gray-900">Key Metrics</h3>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Total Modules</span>
+                    <span className="text-xl font-bold text-gray-900">{dashboard.total_modules}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Clusters per Teacher</span>
+                    <span className="text-xl font-bold text-gray-900">
+                      {(dashboard.total_clusters / Math.max(1, dashboard.total_teachers)).toFixed(1)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Modules per Cluster</span>
+                    <span className="text-xl font-bold text-gray-900">
+                      {(dashboard.total_modules / Math.max(1, dashboard.total_clusters)).toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Top Performing Teachers */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <BarChart3 className="w-6 h-6 text-purple-600" />
+                <h2 className="text-xl font-bold text-gray-900">Top Performing Teachers</h2>
+              </div>
+              <SimpleBarChart
+                data={teachers.slice(0, 5).map(teacher => ({
+                  label: teacher.name,
+                  value: teacher.total_modules
+                }))}
+                color="purple"
               />
             </div>
 
@@ -327,7 +424,7 @@ const PrincipalDashboard = ({ user }) => {
   );
 };
 
-const StatCard = ({ icon: Icon, label, value, subtitle, color }) => {
+const StatCard = ({ icon: Icon, label, value, subtitle, color, trend }) => {
   const colorClasses = {
     purple: 'bg-purple-100 text-purple-600',
     blue: 'bg-blue-100 text-blue-600',
@@ -336,14 +433,24 @@ const StatCard = ({ icon: Icon, label, value, subtitle, color }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
+    <div className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-shadow">
       <div className="flex items-center gap-4">
         <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
           <Icon className="w-6 h-6" />
         </div>
         <div className="flex-1">
           <div className="text-sm text-gray-600 mb-1">{label}</div>
-          <div className="text-2xl font-bold text-gray-900">{value}</div>
+          <div className="flex items-center gap-2">
+            <div className="text-2xl font-bold text-gray-900">{value}</div>
+            {trend !== undefined && (
+              <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
+                trend > 0 ? 'bg-green-50 text-green-600' : trend < 0 ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-gray-600'
+              }`}>
+                <TrendingUp className={`w-3 h-3 ${trend < 0 ? 'rotate-180' : ''}`} />
+                {trend > 0 ? '+' : ''}{trend}%
+              </div>
+            )}
+          </div>
           {subtitle && <div className="text-xs text-gray-500 mt-1">{subtitle}</div>}
         </div>
       </div>

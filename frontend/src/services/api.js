@@ -87,6 +87,9 @@ export const admin = {
     return apiClient.get(url);
   },
   getSchoolDetails: (schoolId) => apiClient.get(`/api/admin/schools/${schoolId}`),
+  getDistrictsByState: (state) => apiClient.get(`/api/admin/geographic/districts/${encodeURIComponent(state)}`),
+  getSchoolsByDistrict: (state, district) => apiClient.get(`/api/admin/geographic/schools/${encodeURIComponent(state)}/${encodeURIComponent(district)}`),
+  getSchoolStats: (schoolId) => apiClient.get(`/api/admin/school/${schoolId}/stats`),
 };
 
 // ================== SCHOOLS (Principals/Administrators) ==================

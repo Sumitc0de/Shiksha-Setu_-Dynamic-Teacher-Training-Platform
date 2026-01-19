@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { LogIn, BookOpen, Mail, Lock, AlertCircle, Eye, EyeOff, Shield, School, User } from 'lucide-react';
+import { LogIn, BookOpen, Mail, Lock, AlertCircle, Eye, EyeOff, Shield, School, User, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import * as api from '../../services/api';
 
 const LoginPage = ({ onLoginSuccess }) => {
+  const navigate = useNavigate();
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -74,8 +76,16 @@ const LoginPage = ({ onLoginSuccess }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-6">
-      <div className="max-w-6xl w-full grid md:grid-cols-2 gap-8">
-        {/* Left Side - Branding */}
+      {/* Back to Home Button */}
+      <button
+        onClick={() => navigate('/landing')}
+        className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm text-gray-700 rounded-lg hover:bg-white transition-colors border shadow-sm"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Home
+      </button>
+
+      <div className="max-w-6xl w-full grid md:grid-cols-2 gap-8">{/* Left Side - Branding */}
         <div className="flex flex-col justify-center space-y-6 p-8">
           <div className="flex items-center gap-3">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">

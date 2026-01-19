@@ -4,22 +4,24 @@ from datetime import datetime
 
 class ClusterBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=100, description="Cluster name must be at least 2 characters")
-    region_type: str = Field(..., description="Urban, Rural, Tribal, etc.")
-    language: str = Field(..., min_length=1, max_length=50)
-    infrastructure_constraints: Optional[str] = Field(None, description="High, Medium, Low")
-    key_issues: Optional[str] = Field(None)
-    grade_range: Optional[str] = Field(None)
+    geographic_type: str = Field(..., description="Urban, Rural, Tribal, etc.")
+    primary_language: str = Field(..., min_length=1, max_length=50)
+    infrastructure_level: str = Field(..., description="High, Medium, Low")
+    specific_challenges: Optional[str] = Field(None)
+    total_teachers: int = Field(..., ge=0)
+    additional_notes: Optional[str] = Field(None)
 
 class ClusterCreate(ClusterBase):
     pass
 
 class ClusterUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100, description="Cluster name must be at least 2 characters")
-    region_type: Optional[str] = None
-    language: Optional[str] = None
-    infrastructure_constraints: Optional[str] = None
-    key_issues: Optional[str] = None
-    grade_range: Optional[str] = None
+    geographic_type: Optional[str] = None
+    primary_language: Optional[str] = None
+    infrastructure_level: Optional[str] = None
+    specific_challenges: Optional[str] = None
+    total_teachers: Optional[int] = Field(None, ge=0)
+    additional_notes: Optional[str] = None
 
 class ClusterResponse(ClusterBase):
     id: int

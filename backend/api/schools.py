@@ -105,23 +105,14 @@ async def get_school_dashboard(
         User.last_login >= thirty_days_ago
     ).count()
     
-    total_clusters = db.query(Cluster).filter(
-        Cluster.school_id == current_user.school_id
-    ).count()
+    # For now, show total platform stats as school doesn't directly link to clusters
+    # In future, add school_id to clusters for better tracking
+    total_clusters = db.query(Cluster).count()
+    total_modules = db.query(Module).count()
     
-    total_modules = db.query(Module).join(Cluster).filter(
-        Cluster.school_id == current_user.school_id
-    ).count()
-    
-    approved_modules = db.query(Module).join(Cluster).filter(
-        Cluster.school_id == current_user.school_id,
-        Module.approved == True
-    ).count()
-    
-    pending_modules = db.query(Module).join(Cluster).filter(
-        Cluster.school_id == current_user.school_id,
-        Module.approved == False
-    ).count()
+    # Count approved modules from all modules
+    approved_modules = db.query(Module).filter(Module.approved == True).count()
+    pending_modules = db.query(Module).filter(Module.approved == False).count()
     
     return SchoolDashboard(
         school_id=school.id,
@@ -160,27 +151,22 @@ async def list_school_teachers(
     
     result = []
     for teacher in teachers:
-        total_clusters = db.query(Cluster).filter(Cluster.teacher_id == teacher.id).count()
-        total_modules = db.query(Module).join(Cluster).filter(Cluster.teacher_id == teacher.id).count()
-        approved_modules = db.query(Module).join(Cluster).filter(
-            Cluster.teacher_id == teacher.id,
-            Module.approved == True
-        ).count()
-        
-        # Get recent activity
-        recent_module = db.query(Module).join(Cluster).filter(
-            Cluster.teacher_id == teacher.id
-        ).order_by(desc(Module.created_at)).first()
+        # For now, show 0 as clusters aren't directly linked to teachers
+        total_clusters = 0
+        total_modules = 0
+        approved_modules = 0
         
         recent_activity = None
-        if recent_module:
-            days_ago = (datetime.utcnow() - recent_module.created_at).days
+        if teacher.last_login:
+            days_ago = (datetime.utcnow() - teacher.last_login).days
             if days_ago == 0:
-                recent_activity = "Created module today"
+                recent_activity = "Active today"
             elif days_ago == 1:
-                recent_activity = "Created module yesterday"
+                recent_activity = "Active yesterday"
+            elif days_ago <= 7:
+                recent_activity = f"Active {days_ago} days ago"
             else:
-                recent_activity = f"Created module {days_ago} days ago"
+                recent_activity = f"Last seen {days_ago} days ago"
         
         result.append(TeacherActivity(
             id=teacher.id,
@@ -214,25 +200,20 @@ async def list_school_clusters(
             detail="User is not associated with a school"
         )
     
-    query = db.query(Cluster).filter(Cluster.school_id == current_user.school_id)
-    
-    if teacher_id:
-        query = query.filter(Cluster.teacher_id == teacher_id)
-    
-    clusters = query.offset(skip).limit(limit).all()
+    # Get all clusters for now (not filtered by school)
+    clusters = db.query(Cluster).offset(skip).limit(limit).all()
     
     result = []
     for cluster in clusters:
-        teacher = db.query(User).filter(User.id == cluster.teacher_id).first()
         total_modules = db.query(Module).filter(Module.cluster_id == cluster.id).count()
         
         result.append(ClusterInfo(
             id=cluster.id,
             name=cluster.name,
-            teacher_name=teacher.name if teacher else "Unassigned",
-            region_type=cluster.region_type,
-            language=cluster.language,
-            topic=cluster.topic,
+            teacher_name="System",
+            region_type=cluster.geographic_type,
+            language=cluster.primary_language,
+            topic=cluster.name.split('-')[-1].strip() if '-' in cluster.name else "General",
             total_modules=total_modules,
             created_at=cluster.created_at
         ))
@@ -259,27 +240,24 @@ async def list_school_modules(
             detail="User is not associated with a school"
         )
     
-    query = db.query(Module).join(Cluster).filter(Cluster.school_id == current_user.school_id)
-    
-    if teacher_id:
-        query = query.filter(Cluster.teacher_id == teacher_id)
+    # Get all modules (not filtered by school for now)
+    query = db.query(Module)
     
     if approved is not None:
         query = query.filter(Module.approved == approved)
     
-    modules = query.order_by(desc(Module.created_at)).offset(skip).limit(limit).all()
+    modules = query.offset(skip).limit(limit).all()
     
     result = []
     for module in modules:
         cluster = db.query(Cluster).filter(Cluster.id == module.cluster_id).first()
-        teacher = db.query(User).filter(User.id == cluster.teacher_id).first() if cluster else None
         
         result.append(ModuleInfo(
             id=module.id,
             title=module.title,
             cluster_name=cluster.name if cluster else "Unknown",
-            teacher_name=teacher.name if teacher else "Unknown",
-            language=module.language,
+            teacher_name="System",
+            language=module.target_language,
             approved=module.approved,
             created_at=module.created_at
         ))
