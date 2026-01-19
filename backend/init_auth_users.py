@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 import bcrypt
 
 from core.database import SessionLocal, init_db
-from models.database_models import User, UserRole, School
+from models.auth_models import User, UserRole, School
 
 
 def get_password_hash(password: str) -> str:

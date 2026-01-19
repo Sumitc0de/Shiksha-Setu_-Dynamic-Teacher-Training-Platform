@@ -2,7 +2,8 @@
 Quick script to check database content
 """
 from core.database import SessionLocal
-from models.database_models import School, User, Cluster, Manual, Module
+from models.auth_models import School, User
+from models.database_models import Cluster, Manual, Module
 
 def check_data():
     db = SessionLocal()

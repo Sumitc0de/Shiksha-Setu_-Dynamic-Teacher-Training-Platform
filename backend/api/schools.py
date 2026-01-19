@@ -11,7 +11,8 @@ from sqlalchemy import desc
 from pydantic import BaseModel
 
 from core.database import get_db
-from models.database_models import User, UserRole, School, Cluster, Module
+from models.auth_models import User, UserRole, School
+from models.database_models import Cluster, Module
 from api.auth import get_current_user
 
 router = APIRouter(prefix="/schools", tags=["Schools"])

@@ -13,7 +13,7 @@ import jwt
 import bcrypt
 
 from core.database import get_db
-from models.database_models import User, UserRole, School
+from models.auth_models import User, UserRole, School
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 security = HTTPBearer()
