@@ -20,6 +20,8 @@ import {
   FileText,
   Calendar,
   ThumbsUp,
+  Download,
+  Share2,
 } from 'lucide-react';
 import { PageTransition, FadeIn, listContainerVariants, listItemVariants } from '../ui/PageTransition';
 import { PageHeader, Modal, Alert, EmptyState, ConfirmDialog, Badge, LoadingSpinner } from '../ui/SharedComponents';
@@ -30,6 +32,8 @@ import {
   approveModule,
   deleteModule,
   submitFeedback,
+  exportModulePDF,
+  downloadPDF,
 } from '../../services/api';
 
 export default function LibraryPage() {
@@ -41,6 +45,7 @@ export default function LibraryPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [alert, setAlert] = useState(null);
+  const [exportingModuleId, setExportingModuleId] = useState(null);
 
   // Filters
   const [filterCluster, setFilterCluster] = useState('');
@@ -105,6 +110,54 @@ export default function LibraryPage() {
       setAlert({ type: 'error', message: error.message || 'Failed to delete module' });
     } finally {
       setDeleteConfirm(null);
+    }
+  };
+
+  const handleExport = async (module, event) => {
+    // Prevent card click event
+    event?.stopPropagation();
+
+    try {
+      setExportingModuleId(module.id);
+      
+      // Step 1: Export the module PDF
+      console.log('Exporting module:', module.id);
+      const response = await exportModulePDF(module.id);
+      console.log('Export response:', response);
+      
+      // axios already unwraps .data, so response itself is the data
+      const exportResponse = response.data || response;
+      console.log('Export data:', exportResponse);
+      
+      if (!exportResponse || !exportResponse.pdf_id) {
+        throw new Error('Invalid response from server: pdf_id not found');
+      }
+      
+      const pdfId = exportResponse.pdf_id;
+      console.log('PDF ID:', pdfId);
+
+      // Step 2: Download the PDF
+      const downloadResponse = await downloadPDF(pdfId);
+      const pdfBlob = downloadResponse.data || downloadResponse;
+      
+      // Create download link
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${module.title.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      setAlert({ type: 'success', message: 'Module exported successfully!' });
+    } catch (error) {
+      console.error('Export error:', error);
+      setAlert({ type: 'error', message: error.message || 'Failed to export module' });
+    } finally {
+      setExportingModuleId(null);
     }
   };
 
@@ -318,7 +371,42 @@ export default function LibraryPage() {
                         <span className="text-xs" style={{ color: 'var(--setu-400)' }}>
                           Click to read full module
                         </span>
-                        <BookOpen className="w-4 h-4" style={{ color: 'var(--setu-500)' }} />
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => handleExport(module, e)}
+                            disabled={exportingModuleId === module.id}
+                            className="flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors"
+                            style={{
+                              color: exportingModuleId === module.id ? 'var(--ink-300)' : 'var(--setu-500)',
+                              backgroundColor: 'var(--paper-100)',
+                              border: '1px solid var(--paper-200)',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (exportingModuleId !== module.id) {
+                                e.currentTarget.style.backgroundColor = 'var(--setu-50)';
+                                e.currentTarget.style.borderColor = 'var(--setu-300)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'var(--paper-100)';
+                              e.currentTarget.style.borderColor = 'var(--paper-200)';
+                            }}
+                          >
+                            {exportingModuleId === module.id ? (
+                              <>
+                                <div className="w-3 h-3 border-2 border-t-transparent rounded-full animate-spin" 
+                                     style={{ borderColor: 'var(--ink-300)', borderTopColor: 'transparent' }} />
+                                Exporting...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-3 h-3" />
+                                Export & Share
+                              </>
+                            )}
+                          </button>
+                          <BookOpen className="w-4 h-4" style={{ color: 'var(--setu-500)' }} />
+                        </div>
                       </div>
                     </div>
                   </motion.div>

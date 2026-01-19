@@ -84,7 +84,8 @@ export default function ClustersPage() {
   const loadClusters = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getClusters();
+      // Add timestamp to prevent caching issues when switching users
+      const data = await getClusters({ _t: Date.now() });
       setClusters(data);
     } catch (error) {
       setAlert({ type: 'error', message: 'Failed to load clusters' });
