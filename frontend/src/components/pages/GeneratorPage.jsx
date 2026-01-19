@@ -19,6 +19,9 @@ import {
   Wand2,
   Feather,
   Languages,
+  Youtube,
+  ChevronDown,
+  ExternalLink,
 } from 'lucide-react';
 import { PageTransition, FadeIn, InkReveal } from '../ui/PageTransition';
 import { PageHeader, Alert, LoadingSpinner } from '../ui/SharedComponents';
@@ -130,6 +133,7 @@ export default function GeneratorPage() {
   const [generating, setGenerating] = useState(false);
   const [generatedModule, setGeneratedModule] = useState(null);
   const [alert, setAlert] = useState(null);
+  const [showYoutubeSuggestions, setShowYoutubeSuggestions] = useState(false);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -138,6 +142,35 @@ export default function GeneratorPage() {
     topic: '',
     target_language: 'english',
   });
+
+  // YouTube suggestions for teacher training
+  const youtubeSuggestions = [
+    {
+      title: 'Effective Teaching Strategies for Rural Areas',
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      category: 'Teaching Methods'
+    },
+    {
+      title: 'Using Technology in Low-Resource Classrooms',
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      category: 'Technology'
+    },
+    {
+      title: 'Cultural Sensitivity in Teaching',
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      category: 'Cultural Awareness'
+    },
+    {
+      title: 'Interactive Learning Activities',
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      category: 'Engagement'
+    },
+    {
+      title: 'Classroom Management Tips',
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      category: 'Management'
+    },
+  ];
 
   const loadData = useCallback(async () => {
     try {
@@ -711,6 +744,109 @@ export default function GeneratorPage() {
                       Go to Library
                       <ArrowRight className="w-4 h-4" />
                     </motion.button>
+                  </motion.div>
+
+                  {/* YouTube Suggestions - shown after module generation */}
+                  <motion.div 
+                    className="px-6 pb-6"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.2 }}
+                  >
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowYoutubeSuggestions(!showYoutubeSuggestions)}
+                        className="flex items-center gap-2 text-sm font-medium transition-colors"
+                        style={{ 
+                          color: '#3b82f6',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#2563eb';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#3b82f6';
+                        }}
+                      >
+                        <Youtube className="w-4 h-4" />
+                        <span>Want some YouTube suggestions?</span>
+                        <motion.div
+                          animate={{ rotate: showYoutubeSuggestions ? 180 : 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </motion.div>
+                      </button>
+
+                      <AnimatePresence>
+                        {showYoutubeSuggestions && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="mt-3 space-y-2">
+                              {youtubeSuggestions.map((video, index) => (
+                                <motion.a
+                                  key={index}
+                                  href={video.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-start gap-3 p-3 rounded-lg transition-all"
+                                  style={{
+                                    backgroundColor: 'var(--paper-100)',
+                                    border: '1px solid var(--paper-200)',
+                                  }}
+                                  initial={{ x: -20, opacity: 0 }}
+                                  animate={{ x: 0, opacity: 1 }}
+                                  transition={{ delay: index * 0.1 }}
+                                  whileHover={{
+                                    backgroundColor: 'var(--setu-50)',
+                                    borderColor: 'var(--setu-300)',
+                                    scale: 1.02,
+                                  }}
+                                >
+                                  <div className="flex-shrink-0 mt-0.5">
+                                    <div 
+                                      className="w-8 h-8 rounded flex items-center justify-center"
+                                      style={{ backgroundColor: '#ff0000' }}
+                                    >
+                                      <Youtube className="w-5 h-5 text-white" />
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <h4 
+                                        className="text-sm font-medium leading-snug"
+                                        style={{ color: 'var(--ink-100)' }}
+                                      >
+                                        {video.title}
+                                      </h4>
+                                      <ExternalLink 
+                                        className="w-4 h-4 flex-shrink-0" 
+                                        style={{ color: 'var(--ink-300)' }}
+                                      />
+                                    </div>
+                                    <span 
+                                      className="text-xs mt-1 inline-block px-2 py-0.5 rounded"
+                                      style={{
+                                        color: 'var(--setu-600)',
+                                        backgroundColor: 'var(--setu-100)',
+                                      }}
+                                    >
+                                      {video.category}
+                                    </span>
+                                  </div>
+                                </motion.a>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </motion.div>
                 </motion.div>
               ) : (
