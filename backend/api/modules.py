@@ -212,7 +212,7 @@ async def approve_module(
         module_id=module.id,
         filename=pdf_result["filename"],
         file_path=pdf_result["file_path"],
-        expires_at=datetime.utcnow() + timedelta(days=7),
+        language=module.language,
     )
     db.add(pdf_record)
 

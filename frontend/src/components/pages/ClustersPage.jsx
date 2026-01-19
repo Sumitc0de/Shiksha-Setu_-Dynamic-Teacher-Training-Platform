@@ -118,12 +118,12 @@ export default function ClustersPage() {
   const openEditModal = (cluster) => {
     setFormData({
       name: cluster.name,
-      geographic_type: cluster.geographic_type,
-      primary_language: cluster.primary_language,
-      infrastructure_level: cluster.infrastructure_level,
-      total_teachers: cluster.total_teachers,
-      specific_challenges: cluster.specific_challenges || '',
-      additional_notes: cluster.additional_notes || '',
+      geographic_type: cluster.region_type || cluster.geographic_type,
+      primary_language: cluster.language || cluster.primary_language,
+      infrastructure_level: cluster.infrastructure_constraints || cluster.infrastructure_level,
+      total_teachers: cluster.total_teachers || 0,
+      specific_challenges: cluster.key_issues || cluster.specific_challenges || '',
+      additional_notes: cluster.grade_range || cluster.additional_notes || '',
     });
     setEditingCluster(cluster);
     setShowModal(true);
@@ -305,7 +305,7 @@ export default function ClustersPage() {
             animate="visible"
           >
             {filteredClusters.map((cluster) => {
-              const RegionIcon = getRegionIcon(cluster.geographic_type);
+              const RegionIcon = getRegionIcon(cluster.region_type || cluster.geographic_type);
               return (
                 <motion.div
                   key={cluster.id}
@@ -349,7 +349,7 @@ export default function ClustersPage() {
                     </div>
 
                     {/* Title */}
-                    <h3 className="text-lg font-medium mb-3 flex items-center gap-2" style={{ color: 'var(--ink-100)' }}>
+                    <h3 className="text-xl font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
                       {cluster.name}
                       {cluster.pinned && (
                         <Pin className="w-4 h-4 fill-current" style={{ color: 'var(--setu-600)' }} />
@@ -360,45 +360,35 @@ export default function ClustersPage() {
                     <div className="flex flex-wrap gap-2 mb-4">
                       <Badge variant="primary">
                         <MapPin className="w-3 h-3" />
-                        {cluster.geographic_type}
+                        {cluster.region_type || cluster.geographic_type}
                       </Badge>
                       <Badge variant="default">
                         <Languages className="w-3 h-3" />
-                        {cluster.primary_language}
+                        {cluster.language || cluster.primary_language}
                       </Badge>
-                      <Badge variant="default">
-                        <GraduationCap className="w-3 h-3" />
-                        {cluster.total_teachers} teachers
-                      </Badge>
-                      {cluster.infrastructure_level && (
+                      {cluster.infrastructure_constraints && (
                         <Badge variant="default">
                           <Settings className="w-3 h-3" />
-                          {cluster.infrastructure_level} Infrastructure
+                          {cluster.infrastructure_constraints}
+                        </Badge>
+                      )}
+                      {cluster.grade_range && (
+                        <Badge variant="default">
+                          <GraduationCap className="w-3 h-3" />
+                          Grade {cluster.grade_range}
                         </Badge>
                       )}
                     </div>
 
                     {/* Details */}
-                    {cluster.specific_challenges && (
+                    {cluster.key_issues && (
                       <div className="mb-3">
-                        <div className="flex items-center gap-1 text-xs mb-1" style={{ color: 'var(--ink-400)' }}>
+                        <div className="flex items-center gap-1 text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>
                           <AlertTriangle className="w-3 h-3" />
-                          Challenges
+                          Key Issues
                         </div>
-                        <p className="text-sm line-clamp-2" style={{ color: 'var(--ink-300)' }}>
-                          {cluster.specific_challenges}
-                        </p>
-                      </div>
-                    )}
-
-                    {cluster.additional_notes && (
-                      <div className="mb-3">
-                        <div className="flex items-center gap-1 text-xs mb-1" style={{ color: 'var(--ink-400)' }}>
-                          <Settings className="w-3 h-3" />
-                          Additional Notes
-                        </div>
-                        <p className="text-sm line-clamp-2" style={{ color: 'var(--ink-300)' }}>
-                          {cluster.additional_notes}
+                        <p className="text-sm line-clamp-2" style={{ color: 'var(--text-primary)' }}>
+                          {cluster.key_issues}
                         </p>
                       </div>
                     )}
@@ -408,11 +398,11 @@ export default function ClustersPage() {
                   <div 
                     className="px-6 py-3"
                     style={{ 
-                      borderTop: '1px solid var(--paper-200)',
-                      backgroundColor: 'rgba(15, 23, 42, 0.5)',
+                      borderTop: '1px solid var(--border)',
+                      backgroundColor: 'var(--card-footer)',
                     }}
                   >
-                    <p className="text-xs" style={{ color: 'var(--ink-400)' }}>
+                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                       Created {new Date(cluster.created_at).toLocaleDateString()}
                     </p>
                   </div>

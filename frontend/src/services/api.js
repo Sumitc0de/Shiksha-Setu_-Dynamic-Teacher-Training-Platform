@@ -199,6 +199,17 @@ export const submitFeedback = (moduleId, rating, comment = null) => {
   return apiClient.post(`/api/modules/${moduleId}/feedback`, { rating, comment });
 };
 
+// ================== EXPORTS ==================
+export const exportModulePDF = (moduleId) => {
+  return apiClient.post(`/api/exports/module-pdf?module_id=${moduleId}`);
+};
+
+export const downloadPDF = (pdfId) => {
+  return apiClient.get(`/api/exports/download/${pdfId}`, {
+    responseType: 'blob'
+  });
+};
+
 // ================== TRANSLATION ==================
 export const translate = (text, targetLanguage, sourceLanguage = 'english') => {
   return apiClient.post('/api/translation/translate', {
