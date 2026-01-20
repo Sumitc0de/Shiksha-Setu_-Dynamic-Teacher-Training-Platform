@@ -262,6 +262,19 @@ export default function BookLayout({ children }) {
                 )}
               </AnimatePresence>
             </div>
+            
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-opacity-50"
+              style={{ 
+                backgroundColor: 'transparent',
+                color: 'var(--ink-400)',
+              }}
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="flex-1 text-left">Logout</span>
+            </button>
           </div>
         </div>
       </aside>

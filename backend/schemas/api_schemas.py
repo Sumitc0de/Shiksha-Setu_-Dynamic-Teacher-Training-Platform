@@ -1,27 +1,33 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 
 class ClusterBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=100, description="Cluster name must be at least 2 characters")
-    geographic_type: str = Field(..., description="Urban, Rural, Tribal, etc.")
-    primary_language: str = Field(..., min_length=1, max_length=50)
-    infrastructure_level: str = Field(..., description="High, Medium, Low")
-    specific_challenges: Optional[str] = Field(None)
-    total_teachers: int = Field(..., ge=0)
+    geographic_type: str = Field(..., description="Urban, Rural, Tribal, etc.", alias="region_type")
+    primary_language: str = Field(..., min_length=1, max_length=50, alias="language")
+    infrastructure_level: str = Field(..., description="High, Medium, Low", alias="infrastructure_constraints")
+    specific_challenges: Optional[str] = Field(None, alias="key_issues")
+    total_teachers: int = Field(default=1, ge=0)
     additional_notes: Optional[str] = Field(None)
+    
+    class Config:
+        populate_by_name = True  # Allow both alias and field name
 
 class ClusterCreate(ClusterBase):
     pass
 
 class ClusterUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100, description="Cluster name must be at least 2 characters")
-    geographic_type: Optional[str] = None
-    primary_language: Optional[str] = None
-    infrastructure_level: Optional[str] = None
-    specific_challenges: Optional[str] = None
+    geographic_type: Optional[str] = Field(None, alias="region_type")
+    primary_language: Optional[str] = Field(None, alias="language")
+    infrastructure_level: Optional[str] = Field(None, alias="infrastructure_constraints")
+    specific_challenges: Optional[str] = Field(None, alias="key_issues")
     total_teachers: Optional[int] = Field(None, ge=0)
     additional_notes: Optional[str] = None
+    
+    class Config:
+        populate_by_name = True  # Allow both alias and field name
 
 class ClusterResponse(ClusterBase):
     id: int
@@ -31,6 +37,8 @@ class ClusterResponse(ClusterBase):
     
     class Config:
         from_attributes = True
+        populate_by_name = True
+        # Don't use by_alias so responses use database field names for existing frontend code
 
 class ManualBase(BaseModel):
     title: str = Field(..., min_length=2, max_length=200, description="Manual title must be at least 2 characters")

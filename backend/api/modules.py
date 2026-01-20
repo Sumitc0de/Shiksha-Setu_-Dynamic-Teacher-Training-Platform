@@ -76,16 +76,16 @@ async def generate_module(
         # Step 2: Build cluster profile dict using correct field names
         cluster_profile = {
             "name": cluster.name,
-            "region_type": cluster.region_type,
-            "language": cluster.language,
-            "infrastructure_constraints": cluster.infrastructure_constraints or "Not specified",
-            "key_issues": cluster.key_issues or "None specified",
-            "grade_range": cluster.grade_range or "Not specified",
+            "region_type": cluster.geographic_type,
+            "language": cluster.primary_language,
+            "infrastructure_constraints": cluster.infrastructure_level or "Not specified",
+            "key_issues": cluster.specific_challenges or "None specified",
+            "grade_range": "Not specified",
         }
 
         target_language = (
             (request.target_language or "").strip().lower()
-            or cluster.language.strip().lower()
+            or cluster.primary_language.strip().lower()
             or "english"
         )
         
