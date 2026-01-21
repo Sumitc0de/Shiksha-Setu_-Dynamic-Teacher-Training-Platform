@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { School, Users, BookOpen, FileText, CheckCircle, Clock, TrendingUp, Activity, LogOut, BarChart3, PieChart, AlertCircle, Target, ChevronRight, Home } from 'lucide-react';
+import { School, Users, BookOpen, FileText, CheckCircle, Clock, TrendingUp, Activity, LogOut, BarChart3, PieChart, AlertCircle, Target, ChevronRight, Home, Upload } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import * as api from '../../services/api';
 import SimpleBarChart from '../charts/SimpleBarChart';
 import SimplePieChart from '../charts/SimplePieChart';
 import TrendIndicator from '../charts/TrendIndicator';
 
 const AdminDashboard = ({ user }) => {
+  const navigate = useNavigate();
   const [overview, setOverview] = useState(null);
   const [schools, setSchools] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -119,62 +121,45 @@ const AdminDashboard = ({ user }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
+    <div className="min-h-screen bg-white">
+      {/* Page Header */}
+      <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Government Dashboard</h1>
-              <p className="text-gray-600 mt-1">Welcome back, {user.name}</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="text-sm text-gray-500">Role</div>
-                <div className="text-lg font-semibold text-blue-600">Administrator</div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="font-medium">Logout</span>
-              </button>
-            </div>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Government Dashboard</h1>
+          <p className="text-gray-600 mt-1">Welcome back, {user.name}</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b">
+      <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex gap-8">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`py-4 border-b-2 font-medium transition-colors ${
+              className={`py-4 border-b-2 font-medium transition-all ${
                 activeTab === 'overview'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ? 'border-blue-600 text-blue-600 shadow-sm'
+                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300'
               }`}
             >
               Overview
             </button>
             <button
               onClick={() => setActiveTab('schools')}
-              className={`py-4 border-b-2 font-medium transition-colors ${
+              className={`py-4 border-b-2 font-medium transition-all ${
                 activeTab === 'schools'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ? 'border-blue-600 text-blue-600 shadow-sm'
+                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300'
               }`}
             >
               Schools
             </button>
             <button
               onClick={() => setActiveTab('teachers')}
-              className={`py-4 border-b-2 font-medium transition-colors ${
+              className={`py-4 border-b-2 font-medium transition-all ${
                 activeTab === 'teachers'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ? 'border-blue-600 text-blue-600 shadow-sm'
+                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300'
               }`}
             >
               Teachers

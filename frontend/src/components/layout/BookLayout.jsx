@@ -46,6 +46,14 @@ export default function BookLayout({ children, user, onLogout }) {
   const location = useLocation();
   const { theme, toggleTheme, isDark } = useTheme();
 
+  // Filter navigation based on user role
+  const filteredNavigation = navigation.filter(item => {
+    if (item.adminOnly && user?.role !== 'admin') {
+      return false;
+    }
+    return true;
+  });
+
   // Check API health
   useEffect(() => {
     const checkApi = async () => {
@@ -148,7 +156,7 @@ export default function BookLayout({ children, user, onLogout }) {
             <p className="text-xs uppercase tracking-wider mb-3 px-3" style={{ color: 'var(--ink-300)' }}>
               Table of Contents
             </p>
-            {navigation.map((item, index) => (
+            {filteredNavigation.map((item, index) => (
               <NavLink
                 key={item.path}
                 to={item.path}
@@ -338,19 +346,10 @@ export default function BookLayout({ children, user, onLogout }) {
           </div>
         </header>
 
-        {/* Desktop header with user profile */}
-        <header 
-          className="hidden lg:flex sticky top-0 z-30 px-6 py-3 backdrop-blur-md items-center justify-end"
-          style={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            borderBottom: '1px solid var(--border-color)',
-          }}
-        >
-          {/* {user && <UserProfile user={user} onLogout={onLogout} />} */}
-        </header>
+        {/* Desktop header - removed white bar */}
         
         {/* Page content with smooth transitions */}
-        <div className="book-container">
+        <div className="book-container" style={{ paddingTop: 0, marginTop: 0 }}>
           <AnimatePresence mode="wait">
             {children}
           </AnimatePresence>

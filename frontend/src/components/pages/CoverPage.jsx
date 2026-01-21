@@ -76,6 +76,9 @@ export default function CoverPage() {
   const [isBookOpening, setIsBookOpening] = useState(true);
   const navigate = useNavigate();
   const shouldReduceMotion = useReducedMotion();
+  
+  // Get user from localStorage
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
     loadStats();
@@ -105,8 +108,8 @@ export default function CoverPage() {
     },
     {
       icon: FileText,
-      title: 'Upload Manuals',
-      description: 'Add training PDFs to the system',
+      title: user?.role === 'admin' ? 'Upload Manuals' : 'View Manuals',
+      description: user?.role === 'admin' ? 'Add training PDFs to the system' : 'Browse available training manuals',
       path: '/manuals',
       accent: 'warm',
     },
@@ -155,13 +158,15 @@ export default function CoverPage() {
   return (
     <PageTransition>
       <motion.div 
-        className="page min-h-[calc(100vh-8rem)] relative overflow-hidden"
+        className="page min-h-[calc(100vh-8rem)] relative overflow-hidden m-0"
         variants={shouldReduceMotion ? {} : bookCoverVariants}
         initial="closed"
         animate={isBookOpening ? "opening" : "open"}
         style={{ 
           perspective: '1500px',
           transformStyle: 'preserve-3d',
+          marginTop: 0,
+          paddingTop: '2rem',
         }}
       >
         {/* Decorative sparkles */}

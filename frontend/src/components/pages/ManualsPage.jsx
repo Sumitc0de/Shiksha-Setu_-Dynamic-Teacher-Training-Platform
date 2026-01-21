@@ -63,6 +63,10 @@ export default function ManualsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
+  // Get user to check permissions
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = user?.role === 'admin';
+
   // Form state
   const [uploadTitle, setUploadTitle] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
@@ -206,13 +210,15 @@ export default function ManualsPage() {
       <div className="page">
         <PageHeader
           title="Training Manuals"
-          subtitle="Upload and manage state training PDF manuals for AI-powered content generation"
+          subtitle={isAdmin ? "Upload and manage state training PDF manuals for AI-powered content generation" : "Browse available training manuals for module generation"}
           pageNumber="2"
           action={
-            <button onClick={() => setShowUploadModal(true)} className="btn btn-primary">
-              <Upload className="w-4 h-4" />
-              Upload Manual
-            </button>
+            isAdmin ? (
+              <button onClick={() => setShowUploadModal(true)} className="btn btn-primary">
+                <Upload className="w-4 h-4" />
+                Upload Manual
+              </button>
+            ) : null
           }
         />
 
@@ -505,13 +511,15 @@ export default function ManualsPage() {
                         )}
                       </button>
                     )}
-                    <button
-                      onClick={() => setDeleteConfirm(manual)}
-                      className="btn btn-outline btn-sm text-danger-500 hover:text-danger-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => setDeleteConfirm(manual)}
+                        className="btn btn-outline btn-sm text-danger-500 hover:text-danger-600"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>

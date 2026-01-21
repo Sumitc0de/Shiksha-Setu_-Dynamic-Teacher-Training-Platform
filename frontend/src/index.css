@@ -245,11 +245,22 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
   body {
     background: linear-gradient(180deg, var(--paper-200) 0%, var(--paper-300) 100%);
     background-attachment: fixed;
     color: var(--ink-600);
     @apply font-sans;
+    min-height: 100vh;
+  }
+
+  #root {
     min-height: 100vh;
   }
 
@@ -313,8 +324,10 @@
 @layer components {
   /* ---- BOOK CONTAINER ---- */
   .book-container {
-    @apply mx-auto px-6 py-8;
+    @apply mx-auto px-6;
     max-width: 1200px;
+    padding-top: 0;
+    margin-top: 0;
   }
 
   /* ---- PAGE STYLES (Dark Mode) ---- */
@@ -325,6 +338,7 @@
     background-image: var(--gradient-paper);
     border: 1px solid var(--border-color);
     position: relative;
+    margin-top: 0 !important;
   }
 
   .page::before {

@@ -342,11 +342,6 @@ export default function GeneratorPage() {
                     Create Cluster
                   </button>
                 )}
-                {manuals.length === 0 && (
-                  <button onClick={() => navigate('/manuals')} className="btn btn-outline btn-sm">
-                    Upload Manual
-                  </button>
-                )}
               </div>
             </div>
           </FadeIn>

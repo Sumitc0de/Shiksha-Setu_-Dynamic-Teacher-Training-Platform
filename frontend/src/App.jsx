@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-route
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider } from './contexts/ThemeContext';
 import BookLayout from './components/layout/BookLayout';
+import AdminLayout from './components/layout/AdminLayout';
 import { LoadingSpinner } from './components/ui/SharedComponents';
 
 // Lazy load pages for performance
@@ -18,6 +19,7 @@ const PrincipalDashboard = lazy(() => import('./components/pages/PrincipalDashbo
 const CoverPage = lazy(() => import('./components/pages/CoverPage'));
 const ClustersPage = lazy(() => import('./components/pages/ClustersPage'));
 const ManualsPage = lazy(() => import('./components/pages/ManualsPage'));
+const AdminManualsPage = lazy(() => import('./components/pages/AdminManualsPage'));
 const GeneratorPage = lazy(() => import('./components/pages/GeneratorPage'));
 const LibraryPage = lazy(() => import('./components/pages/LibraryPage'));
 const TranslationPage = lazy(() => import('./components/pages/TranslationPage'));
@@ -59,9 +61,9 @@ function AnimatedRoutes({ user, onLogout, onLoginSuccess }) {
       case 'admin':
         return <Navigate to="/admin" replace />;
       case 'principal':
-        return <Navigate to="/principal" replace />;
       case 'teacher':
-        return <CoverPage />;
+        // Both principal and teacher roles go to the teacher dashboard (cover page)
+        return <Navigate to="/cover" replace />;
       default:
         return <Navigate to="/landing" replace />;
     }
@@ -96,20 +98,24 @@ function AnimatedRoutes({ user, onLogout, onLoginSuccess }) {
             path="/admin" 
             element={
               <ProtectedRoute allowedRoles={['admin']}>
-                <AdminDashboard user={user} onLogout={onLogout} />
+                <AdminLayout user={user} onLogout={onLogout}>
+                  <AdminDashboard user={user} />
+                </AdminLayout>
               </ProtectedRoute>
             } 
           />
           <Route 
-            path="/principal" 
+            path="/admin/manuals" 
             element={
-              <ProtectedRoute allowedRoles={['principal']}>
-                <PrincipalDashboard user={user} onLogout={onLogout} />
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout user={user} onLogout={onLogout}>
+                  <AdminManualsPage />
+                </AdminLayout>
               </ProtectedRoute>
             } 
           />
           
-          {/* Teacher routes (default app flow) */}
+          {/* School/Teacher routes - accessible by principal and teacher roles */}
           <Route 
             path="/dashboard" 
             element={
@@ -119,42 +125,62 @@ function AnimatedRoutes({ user, onLogout, onLoginSuccess }) {
             } 
           />
           <Route 
+            path="/cover" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher', 'principal']}>
+                <BookLayout user={user} onLogout={onLogout}>
+                  <CoverPage />
+                </BookLayout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/clusters" 
             element={
-              <ProtectedRoute allowedRoles={['teacher']}>
-                <ClustersPage />
+              <ProtectedRoute allowedRoles={['teacher', 'principal']}>
+                <BookLayout user={user} onLogout={onLogout}>
+                  <ClustersPage />
+                </BookLayout>
               </ProtectedRoute>
             } 
           />
           <Route 
             path="/manuals" 
             element={
-              <ProtectedRoute allowedRoles={['teacher']}>
-                <ManualsPage />
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'principal']}>
+                <BookLayout user={user} onLogout={onLogout}>
+                  <ManualsPage />
+                </BookLayout>
               </ProtectedRoute>
             } 
           />
           <Route 
             path="/generate" 
             element={
-              <ProtectedRoute allowedRoles={['teacher']}>
-                <GeneratorPage />
+              <ProtectedRoute allowedRoles={['teacher', 'principal']}>
+                <BookLayout user={user} onLogout={onLogout}>
+                  <GeneratorPage />
+                </BookLayout>
               </ProtectedRoute>
             } 
           />
           <Route 
             path="/library" 
             element={
-              <ProtectedRoute allowedRoles={['teacher']}>
-                <LibraryPage />
+              <ProtectedRoute allowedRoles={['teacher', 'principal']}>
+                <BookLayout user={user} onLogout={onLogout}>
+                  <LibraryPage />
+                </BookLayout>
               </ProtectedRoute>
             } 
           />
           <Route 
             path="/translate" 
             element={
-              <ProtectedRoute allowedRoles={['teacher']}>
-                <TranslationPage />
+              <ProtectedRoute allowedRoles={['teacher', 'principal']}>
+                <BookLayout user={user} onLogout={onLogout}>
+                  <TranslationPage />
+                </BookLayout>
               </ProtectedRoute>
             } 
           />

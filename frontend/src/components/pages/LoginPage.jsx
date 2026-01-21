@@ -18,25 +18,16 @@ const LoginPage = ({ onLoginSuccess }) => {
       password: 'admin123', 
       color: 'blue',
       icon: Shield,
-      description: 'Government Official - Monitor all schools'
+      description: 'Government Official - Upload manuals and monitor schools'
     },
     { 
       role: 'PRINCIPAL', 
-      name: 'Mrs. Anita Sharma',
-      email: 'principal.mumbai@school.edu', 
+      name: 'Meera Gupta',
+      email: 'meera.gupta@principal.bangalore.edu', 
       password: 'principal123', 
       color: 'purple',
       icon: School,
-      description: 'School Administrator - Monitor teachers'
-    },
-    { 
-      role: 'TEACHER', 
-      name: 'Priya Deshmukh',
-      email: 'priya.deshmukh@school.edu', 
-      password: 'teacher123', 
-      color: 'green',
-      icon: User,
-      description: 'Teacher - Create training modules'
+      description: 'School Login - Access teacher dashboard and create modules'
     }
   ];
 
@@ -110,22 +101,15 @@ const LoginPage = ({ onLoginSuccess }) => {
             <div className="flex items-start gap-3">
               <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-semibold text-gray-800">For Administrators</h3>
-                <p className="text-gray-600 text-sm">Monitor schools and oversee training programs</p>
+                <h3 className="font-semibold text-gray-800">Government Officials</h3>
+                <p className="text-gray-600 text-sm">Upload training manuals and monitor all schools</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <School className="w-6 h-6 text-purple-600 flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-semibold text-gray-800">For Principals</h3>
-                <p className="text-gray-600 text-sm">Track teacher performance and module creation</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <User className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="font-semibold text-gray-800">For Teachers</h3>
-                <p className="text-gray-600 text-sm">Create personalized training modules with AI</p>
+                <h3 className="font-semibold text-gray-800">School Access</h3>
+                <p className="text-gray-600 text-sm">Access teacher dashboard and create training modules with AI</p>
               </div>
             </div>
           </div>
